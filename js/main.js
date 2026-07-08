@@ -26,6 +26,7 @@
     // 解鎖後組裝各模組（需在 Tone.start() 之後）
     AudioEngine.init();
     UI.initA4();
+    Keyboard.initKeyboard(document.getElementById('keyboard'));
 
     unlockEl.hidden = true;
     appEl.hidden = false;

@@ -22,3 +22,11 @@
 - 引擎參數以 `CONFIG` 單一真實來源暴露(`AudioEngine.config`/`softClip`),供測試重建同一條鏈,確保「測的就是實作的」。
 - **量測方法(環境限制→改法)**:headless 預覽的即時 `AnalyserNode` 收不到音訊(連獨立 Tone.Synth 亦峰值 0,非引擎 bug)。改用 `Tone.Offline` 離線渲染取樣 buffer,以自相關+拋物線內插測基頻(合成 440/261.626 驗證器誤差<0.1Hz)。四例實測誤差 ≤0.094Hz(<0.5Hz)。
 - A4 UI:`−/＋/preset` 綁 `pointerdown`;number input `change` 鉗制回寫;範圍 415–445、步進 1、四捨五入。實測各路徑鉗制正確。
+
+## M2 — 鍵盤渲染 + 音名
+- **鍵盤形態(定案,推翻先前判讀)**:採**傳統鋼琴外觀**(白鍵滿高並排、黑鍵較窄疊於白鍵交界上方),非等寬半音直條。使用者明確指定。
+  - 連帶定義:**可視鍵數 = 白鍵數**;單白鍵寬 = 容器寬 / 白鍵數;黑鍵寬 = 白鍵寬 × 0.62、高 62%、置於下側白鍵右緣中心、z-index 疊上。
+- 資料模型:midi 33–84 共 52 鍵;白鍵 pc∈{0,2,4,5,7,9,11};八度 `floor(midi/12)−1`;白鍵 label=音名、黑鍵空。白鍵總數 31。
+- 渲染:白鍵 `left=j×whiteWidth%`、絕對定位;黑鍵僅在兩側白鍵**皆可見**時繪製。預設視窗自 C4 起 12 白鍵(C4–G5),含 A4。M3 才做 +/− 與卷軸移動。
+- 互動:每鍵 `pointerdown`→`playNote(midi)`+`.active`;放開用**全域** `pointerup/pointercancel` 依 `pointerId` 精準復原(多點觸控正確,放開在鍵外亦可)。`setPointerCapture` try/catch 保護。`key-label` 設 `pointer-events:none` 讓命中落在鍵本體。
+- 實測:52 鍵模型正確;12 白+8 黑 DOM;白鍵標 C4–G5、黑鍵無字;點白/黑鍵發對應 midi、變色、放開復原;多點各自復原;無 console error。

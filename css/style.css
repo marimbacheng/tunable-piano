@@ -151,3 +151,49 @@ html, body {
   touch-action: none;
 }
 .a4-preset:active { background: #2a2a34; }
+
+/* ===== 鍵盤（傳統鋼琴：白鍵滿高、黑鍵較窄疊上方） ===== */
+.keyboard {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 10px;
+  background: #0d0d10;
+  border-radius: 6px;
+  overflow: hidden;
+  touch-action: none;
+}
+.key {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+}
+.key.white {
+  height: 100%;
+  background: #f4f4ef;
+  border: 1px solid #8a8a8a;
+  border-radius: 0 0 5px 5px;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.key.white.active { background: #c6ccd4; }        /* 按下變深 */
+.key.black {
+  height: 62%;
+  background: #1b1b22;
+  border: 1px solid #000;
+  border-radius: 0 0 4px 4px;
+  z-index: 2;
+}
+.key.black.active { background: #48506a; }        /* 按下變色（深底上以亮示按下） */
+.key-label {
+  font-size: clamp(9px, 1.6vw, 14px);
+  color: #333;
+  padding-bottom: 8px;
+  pointer-events: none;                            /* 讓 pointerdown 命中鍵本體 */
+}
