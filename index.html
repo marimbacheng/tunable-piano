@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport-fit=cover 讓 safe-area env() 生效;鎖縮放避免雙擊放大 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#101015">
+  <title>練唱鋼琴</title>
+  <!-- 相對路徑;禁用絕對路徑以相容 GitHub Pages 子路徑 -->
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Tone.js（開發期 CDN；M6 若離線再改自帶） -->
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+</head>
+<body>
+  <!-- 解鎖層：手勢內啟動 AudioContext -->
+  <div id="unlock" class="overlay">
+    <button id="unlock-btn" class="unlock-btn" type="button">點擊開始</button>
+  </div>
+
+  <!-- 橫向提示層：直向時蓋滿，橫向自動移除 -->
+  <div id="rotate" class="overlay" hidden>
+    <div class="rotate-msg">請將手機橫放<br><span class="rotate-icon">↻</span></div>
+  </div>
+
+  <!-- 主畫面容器（M1 起長內容） -->
+  <main id="app" class="app" hidden>
+    <p class="placeholder">主畫面（M1 起加入音訊與鍵盤）</p>
+  </main>
+
+  <!-- 相對路徑 -->
+  <script src="js/main.js"></script>
+</body>
+</html>

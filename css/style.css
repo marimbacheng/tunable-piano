@@ -1,0 +1,80 @@
+/* ===== reset / 全域 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root { color-scheme: dark; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;                 /* 阻止橡皮筋捲動 */
+  background: #1a1a1f;
+  color: #eaeaea;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang TC", sans-serif;
+  touch-action: none;               /* 硬性限制：禁縮放/捲動手勢 */
+  -webkit-user-select: none;
+  user-select: none;                /* 硬性限制：禁選取 */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+[hidden] { display: none !important; }
+
+/* ===== 覆蓋層共用 ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* safe-area：瀏海/動態島 */
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background: #101015;
+}
+
+/* 直向提示層需蓋在解鎖層之上（含解鎖前） */
+#unlock { z-index: 20; }
+#rotate { z-index: 30; }
+
+/* ===== 解鎖鈕 ===== */
+.unlock-btn {
+  font-size: 1.5rem;
+  padding: 1rem 2.75rem;
+  border: 2px solid #4a90d9;
+  border-radius: 999px;
+  background: #1e2a3a;
+  color: #eaf2ff;
+  cursor: pointer;
+  touch-action: none;
+}
+.unlock-btn:active { background: #2a3a52; }
+
+/* ===== 橫向提示 ===== */
+.rotate-msg {
+  font-size: 1.5rem;
+  line-height: 2;
+  text-align: center;
+}
+.rotate-icon {
+  display: inline-block;
+  font-size: 2.5rem;
+  transform: rotate(90deg);
+}
+
+/* ===== 主畫面 ===== */
+.app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+.placeholder { color: #555; font-size: 1rem; }
