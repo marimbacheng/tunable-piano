@@ -47,3 +47,11 @@
 - **環境限制(明說)**:preview 分頁為 hidden(`document.hidden=true`、rAF 500ms 內 0 次),故 `Tone.Draw`/rAF 暫停、live dot 不亮 —— 非程式 bug,可見分頁/實機才會亮(留 M6 實機確認)。加測試探針 `_onClick`(排程時間)、`_fireBeat`(視覺映射,繞 rAF)以確定性驗證。
 - 背景節流不飄拍:Transport 用 audio-clock 前瞻排程,已排事件照 audio clock 觸發;headless 無法真模擬背景節流,以架構+time 均勻性佐證。
 - 實測:BPM120→間隔 **0.5000s**、jitter **0ms**;離線渲染 onset 0/0.5/1.0/1.5/2.0s 無累積漂移、peak 0.95;tap 1000/1500/1900→120/150、重置與 20/400 鉗制正確;4/4·3/4·6/8 → dots 4/3/6、beatIndex 循環正確、den→interval 0.5/0.5/0.25s;dot 映射 `_fireBeat` 正確;無 console error。
+
+## M5 — 音量 + Drone + 狀態保存
+- **主音量**:= 既有 `masterGain`(琴鍵 + drone),0–100%→0–1,即時 `masterGain.gain.value`。節拍器**獨立於主音量**。
+- **小重構(修 latent 爆音)**:節拍器 click 由 `toDestination` 改接 `AudioEngine.output`(軟削波輸入,masterGain 之後)→ 全域(密集和弦+click)經同一軟削波,實測 globalPeak **0.9285<1**,不受主音量。M1 頻率回歸 440.051 未變。
+- **Drone**:獨立 `Tone.Synth`(sustain=1、`triggerAttack` 持續、解除時 0.3s release),接 masterGain。多鍵 map。長按 >450ms 切換(短按不切);`.drone` 視覺(琥珀內框+頂點),重繪依 `isDrone(midi)` 保留。A4 改變即時重新調音(`setA4` 更新各 drone `frequency`)。離線:drone t=2.5s RMS 0.35(持續)vs 一般音 0(已衰減)。
+- **狀態保存**:localStorage `tunable-piano-v1` 存 `{a4,volume,bpm,num,den,whiteCount,startWhite}`,去抖 150ms;`loadAndApply()` 開場套用 + `refreshers` 統一刷新顯示。drone/播放中不存。
+- **Bug(修正)**:卷軸 `sync()` 在 `#app` 仍 hidden 時執行 → `clientWidth=0` → 拇指寬 `NaN%` 未設(fresh load 拇指空白)。根因:main.js 先 init 模組才顯示 app。修法:**先 `appEl.hidden=false` 再** init 需量測 DOM 的模組。修後 fresh load 拇指寬 32.26%(=10/31)正確。
+- 實測:主音量 setter/clamp(0/1)、離線 peak 比例 0.5;drone on/off、A4 440→432 drone 261.63→256.87;長按切換 + 重繪保留 + 短按不切;localStorage 存檔與 reload 還原(引擎+顯示全對);無 console error。

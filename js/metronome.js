@@ -27,7 +27,9 @@ const Metronome = (function () {
       click = new Tone.Synth({
         oscillator: { type: 'square' },
         envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 }
-      }).toDestination();             // 與琴鍵 PolySynth 完全分離
+      });
+      // 接軟削波輸入（AudioEngine.output）：與 PolySynth 分離、獨立於主音量，但共用全域防爆音
+      click.connect(AudioEngine.output);
       click.volume.value = -6;
     }
     Tone.Transport.bpm.value = bpm;

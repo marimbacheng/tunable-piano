@@ -23,16 +23,21 @@
     }
     console.log('[unlock] AudioContext state =', Tone.getContext().state);
 
-    // 解鎖後組裝各模組（需在 Tone.start() 之後）
+    // 音訊引擎（不需 DOM）
     AudioEngine.init();
+
+    // 先顯示主畫面，讓容器有版面尺寸（卷軸 sync 需正確 clientWidth，否則量到 0）
+    unlockEl.hidden = true;
+    appEl.hidden = false;
+
+    // 再組裝需量測/渲染 DOM 的模組
     UI.initA4();
     Keyboard.initKeyboard(document.getElementById('keyboard'));
     UI.initKeys();
     UI.initScrollbar();
     UI.initMetronome();
-
-    unlockEl.hidden = true;
-    appEl.hidden = false;
+    UI.initVolume();
+    UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
   }
 
   // pointerdown 為主（低延遲），click 為桌機/後備；旗標確保單次執行
