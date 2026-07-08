@@ -27,6 +27,8 @@
     AudioEngine.init();
     UI.initA4();
     Keyboard.initKeyboard(document.getElementById('keyboard'));
+    UI.initKeys();
+    UI.initScrollbar();
 
     unlockEl.hidden = true;
     appEl.hidden = false;

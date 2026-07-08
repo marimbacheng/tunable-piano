@@ -50,7 +50,89 @@ const UI = (function () {
     });
   }
 
-  return { initA4 };
+  // ===== 可視白鍵數 +/− =====
+  let keysDisplay = null;
+  let syncScroll = null;
+
+  function renderKeys() {
+    if (keysDisplay) keysDisplay.textContent = String(Keyboard.visibleWhiteCount);
+  }
+
+  function initKeys() {
+    keysDisplay = document.getElementById('keys-display');
+    const dec = document.getElementById('keys-dec');
+    const inc = document.getElementById('keys-inc');
+    renderKeys();
+    dec.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      Keyboard.setVisibleWhiteCount(Keyboard.visibleWhiteCount - 1);
+      renderKeys();
+      if (syncScroll) syncScroll();
+    });
+    inc.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      Keyboard.setVisibleWhiteCount(Keyboard.visibleWhiteCount + 1);
+      renderKeys();
+      if (syncScroll) syncScroll();
+    });
+  }
+
+  // ===== 上方卷軸 =====
+  function initScrollbar() {
+    const track = document.getElementById('scrollbar');
+    const thumb = document.getElementById('scroll-thumb');
+    let dragging = false, grabDX = 0;
+
+    function trackW() { return track.clientWidth; }
+    function thumbWpx() {
+      return Math.max(24, trackW() * Keyboard.visibleWhiteCount / Keyboard.totalWhites);
+    }
+    function sync() {
+      const w = thumbWpx(), travel = trackW() - w, maxStart = Keyboard.maxStartWhiteIndex;
+      const leftPx = maxStart > 0 ? (Keyboard.startWhiteIndex / maxStart) * travel : 0;
+      thumb.style.width = (w / trackW() * 100) + '%';
+      thumb.style.left = (leftPx / trackW() * 100) + '%';
+    }
+    function leftPxToStart(leftPx) {
+      const travel = trackW() - thumbWpx(), maxStart = Keyboard.maxStartWhiteIndex;
+      if (travel <= 0 || maxStart <= 0) return 0;
+      const frac = Math.min(1, Math.max(0, leftPx / travel));
+      return Math.round(frac * maxStart);
+    }
+
+    thumb.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      dragging = true;
+      grabDX = e.clientX - thumb.getBoundingClientRect().left;
+      try { if (e.pointerId != null) thumb.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    thumb.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      const leftPx = (e.clientX - track.getBoundingClientRect().left) - grabDX;
+      Keyboard.setStartWhiteIndex(leftPxToStart(leftPx));
+      sync();
+    });
+    const end = function (e) {
+      dragging = false;
+      try { if (e && e.pointerId != null) thumb.releasePointerCapture(e.pointerId); } catch (_) {}
+    };
+    thumb.addEventListener('pointerup', end);
+    thumb.addEventListener('pointercancel', end);
+
+    // 點軌道空白處：視窗中心跳到點擊點
+    track.addEventListener('pointerdown', function (e) {
+      if (e.target === thumb) return;
+      const leftPx = (e.clientX - track.getBoundingClientRect().left) - thumbWpx() / 2;
+      Keyboard.setStartWhiteIndex(leftPxToStart(leftPx));
+      sync();
+    });
+
+    window.addEventListener('resize', sync);
+    syncScroll = sync;   // 供改鍵數後重新同步拇指
+    sync();
+  }
+
+  return { initA4, initKeys, initScrollbar };
 })();
 
 window.UI = UI;

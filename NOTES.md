@@ -30,3 +30,9 @@
 - 渲染:白鍵 `left=j×whiteWidth%`、絕對定位;黑鍵僅在兩側白鍵**皆可見**時繪製。預設視窗自 C4 起 12 白鍵(C4–G5),含 A4。M3 才做 +/− 與卷軸移動。
 - 互動:每鍵 `pointerdown`→`playNote(midi)`+`.active`;放開用**全域** `pointerup/pointercancel` 依 `pointerId` 精準復原(多點觸控正確,放開在鍵外亦可)。`setPointerCapture` try/catch 保護。`key-label` 設 `pointer-events:none` 讓命中落在鍵本體。
 - 實測:52 鍵模型正確;12 白+8 黑 DOM;白鍵標 C4–G5、黑鍵無字;點白/黑鍵發對應 midi、變色、放開復原;多點各自復原;無 console error。
+
+## M3 — 鍵數增減 + 卷軸
+- 狀態仍歸 keyboard.js:新增 `setVisibleWhiteCount`(6–20 鉗制)、`setStartWhiteIndex`([0,maxStart] 鉗制)、getters(totalWhites=31、maxStartWhiteIndex)。
+- **縮放錨點**:改鍵數保留左緣(startWhiteIndex 不動、僅必要時鉗回)。理由:行為可預期,實作簡潔。
+- 卷軸(ui.js):拇指寬 ∝ count/31、位置 ∝ start/maxStart;拖曳用 `setPointerCapture`+`pointermove` 換算 start;點軌道空白處視窗中心跳轉;`resize` 與改鍵數後重新 `sync()`。因 max 20<31 永遠可捲。
+- 實測:+/− 鉗制 6–20;白鍵寬即時 16.67%/8.33%/5%;拇指寬 19.35%/38.71%/64.52%(=count/31);start 0→A1(33)、maxStart 19→C6(84);拖曳超界鉗制(0 / 19);拖中間 start≈10;無 console error。

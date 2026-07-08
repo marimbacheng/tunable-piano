@@ -14,8 +14,9 @@ const Keyboard = (function () {
   let whiteKeys = [];           // 白鍵子集（依序）
   let whiteIndexByMidi = {};    // midi → whiteKeys 索引
   let container = null;
-  let visibleWhiteCount = 12;   // 預設可視白鍵數
-  let startWhiteIndex = 0;      // 可視視窗起點（whiteKeys 索引）；M3 移動
+  const MIN_WHITE = 6, MAX_WHITE = 20;
+  let visibleWhiteCount = 12;   // 預設可視白鍵數（6–20）
+  let startWhiteIndex = 0;      // 可視視窗起點（whiteKeys 索引）
   const pressed = new Map();    // pointerId → 已按下的鍵元素（多點觸控正確復原）
 
   function buildModel() {
@@ -102,6 +103,26 @@ const Keyboard = (function () {
     if (el) { el.classList.remove('active'); pressed.delete(e.pointerId); }  // 放開即復原
   }
 
+  // 改可視白鍵數（6–20 鉗制），保留左緣;鍵少→鍵變寬（render 內 100/count）
+  function setVisibleWhiteCount(n) {
+    n = Math.round(Number(n));
+    visibleWhiteCount = Math.min(MAX_WHITE, Math.max(MIN_WHITE, Number.isFinite(n) ? n : visibleWhiteCount));
+    clampWindow();
+    render();
+    return visibleWhiteCount;
+  }
+
+  // 移動可視視窗起點（whiteKeys 索引），鉗制在 [0, maxStart] 不出界
+  function setStartWhiteIndex(i) {
+    i = Math.round(Number(i));
+    startWhiteIndex = Number.isFinite(i) ? i : startWhiteIndex;
+    clampWindow();
+    render();
+    return startWhiteIndex;
+  }
+
+  function maxStart() { return Math.max(0, whiteKeys.length - visibleWhiteCount); }
+
   function initKeyboard(el) {
     container = el;
     buildModel();
@@ -113,11 +134,15 @@ const Keyboard = (function () {
 
   return {
     initKeyboard,
+    setVisibleWhiteCount, setStartWhiteIndex,
+    MIN_WHITE, MAX_WHITE,
+    get totalWhites() { return whiteKeys.length; },
+    get maxStartWhiteIndex() { return maxStart(); },
+    get visibleWhiteCount() { return visibleWhiteCount; },
+    get startWhiteIndex() { return startWhiteIndex; },
     // 供測試/除錯
     get keys() { return keys; },
-    get whiteKeys() { return whiteKeys; },
-    get visibleWhiteCount() { return visibleWhiteCount; },
-    get startWhiteIndex() { return startWhiteIndex; }
+    get whiteKeys() { return whiteKeys; }
   };
 })();
 

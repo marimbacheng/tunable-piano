@@ -134,6 +134,35 @@ html, body {
   font-size: 0.95rem;
   color: #8fd0ff;
 }
+.keys-display {
+  min-width: 40px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #eaeaea;
+}
+
+/* ===== 上方卷軸 ===== */
+.scrollbar {
+  position: relative;
+  height: 22px;
+  margin-top: 8px;
+  background: #22222a;
+  border: 1px solid #33333d;
+  border-radius: 11px;
+  touch-action: none;
+}
+.thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  min-width: 24px;
+  background: #4a5568;
+  border-radius: 9px;
+  cursor: grab;
+  touch-action: none;
+}
+.thumb:active { cursor: grabbing; background: #5a6a86; }
 .a4-presets {
   display: flex;
   gap: 6px;
