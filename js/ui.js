@@ -87,7 +87,14 @@ const UI = (function () {
 
   // ===== 可視白鍵數 +/− =====
   let keysDisplay = null;
-  let syncScroll = null;
+  let syncScroll = null;   // 由 initScrollbar 設定
+  let syncOctave = null;   // 由 initOctave 設定
+
+  // 視窗位置改變後，同步卷軸拇指與八度顯示
+  function refreshWindow() {
+    if (syncScroll) syncScroll();
+    if (syncOctave) syncOctave();
+  }
 
   function renderKeys() {
     if (keysDisplay) keysDisplay.textContent = String(Keyboard.visibleWhiteCount);
@@ -103,14 +110,14 @@ const UI = (function () {
       e.preventDefault();
       Keyboard.setVisibleWhiteCount(Keyboard.visibleWhiteCount - 1);
       renderKeys();
-      if (syncScroll) syncScroll();
+      refreshWindow();
       persist();
     });
     inc.addEventListener('pointerdown', function (e) {
       e.preventDefault();
       Keyboard.setVisibleWhiteCount(Keyboard.visibleWhiteCount + 1);
       renderKeys();
-      if (syncScroll) syncScroll();
+      refreshWindow();
       persist();
     });
   }
@@ -148,7 +155,7 @@ const UI = (function () {
       if (!dragging) return;
       const leftPx = (e.clientX - track.getBoundingClientRect().left) - grabDX;
       Keyboard.setStartWhiteIndex(leftPxToStart(leftPx));
-      sync();
+      refreshWindow();
       persist();
     });
     const end = function (e) {
@@ -163,7 +170,7 @@ const UI = (function () {
       if (e.target === thumb) return;
       const leftPx = (e.clientX - track.getBoundingClientRect().left) - thumbWpx() / 2;
       Keyboard.setStartWhiteIndex(leftPxToStart(leftPx));
-      sync();
+      refreshWindow();
       persist();
     });
 
@@ -232,17 +239,22 @@ const UI = (function () {
       display.textContent = input.value;
       persist();
     });
-
-    // 停止全部 Drone（解決捲出視窗/忘記哪顆而停不掉的情況）
-    const droneStop = document.getElementById('drone-stop');
-    droneStop.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      AudioEngine.stopAllDrones();
-      document.querySelectorAll('.key.drone').forEach(function (el) { el.classList.remove('drone'); });
-    });
   }
 
-  return { initA4, initKeys, initScrollbar, initMetronome, initVolume, loadAndApply };
+  // ===== 八度切換（◀/▶ 移動可視視窗一個八度；與卷軸共享視窗狀態） =====
+  function initOctave() {
+    const dec = document.getElementById('oct-dec');
+    const inc = document.getElementById('oct-inc');
+    const display = document.getElementById('oct-display');
+    function render() { display.textContent = Keyboard.leftmostName; }
+    render();
+    syncOctave = render;              // 卷軸/鍵數變動時一併更新
+    refreshers.push(render);
+    dec.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.shiftOctave(-1); refreshWindow(); persist(); });
+    inc.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.shiftOctave(1); refreshWindow(); persist(); });
+  }
+
+  return { initA4, initKeys, initScrollbar, initMetronome, initVolume, initOctave, loadAndApply };
 })();
 
 window.UI = UI;

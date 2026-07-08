@@ -9,7 +9,6 @@ const Keyboard = (function () {
   const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   const WHITE_PC = new Set([0, 2, 4, 5, 7, 9, 11]);
   const BLACK_RATIO = 0.62;     // 黑鍵寬相對白鍵寬
-  const LONGPRESS_MS = 450;     // 長按切換 drone 門檻
 
   let keys = [];                // 完整半音模型（A1–C6）
   let whiteKeys = [];           // 白鍵子集（依序）
@@ -79,9 +78,6 @@ const Keyboard = (function () {
     const el = document.createElement('div');
     el.className = 'key ' + cls;
     el.dataset.midi = String(k.midi);
-    if (window.AudioEngine && AudioEngine.isDrone && AudioEngine.isDrone(k.midi)) {
-      el.classList.add('drone');                             // 重繪後仍保留 drone 視覺
-    }
     if (k.label) {
       const lab = document.createElement('span');
       lab.className = 'key-label';
@@ -98,22 +94,13 @@ const Keyboard = (function () {
     const midi = Number(el.dataset.midi);
     AudioEngine.playNote(midi);                               // 一律 pointerdown 發聲
     el.classList.add('active');                               // 按下變色
-    // 長按切換 drone（不影響短按發聲）
-    const timer = setTimeout(function () {
-      const on = AudioEngine.droneToggle(midi);
-      el.classList.toggle('drone', on);
-    }, LONGPRESS_MS);
-    pressed.set(e.pointerId, { el: el, timer: timer });
+    pressed.set(e.pointerId, el);
     try { if (e.pointerId != null) el.setPointerCapture(e.pointerId); } catch (_) {}
   }
 
   function onRelease(e) {
-    const rec = pressed.get(e.pointerId);
-    if (rec) {
-      clearTimeout(rec.timer);
-      rec.el.classList.remove('active');                     // 放開即復原（drone 類不受影響）
-      pressed.delete(e.pointerId);
-    }
+    const el = pressed.get(e.pointerId);
+    if (el) { el.classList.remove('active'); pressed.delete(e.pointerId); }  // 放開即復原
   }
 
   // 改可視白鍵數（6–20 鉗制），保留左緣;鍵少→鍵變寬（render 內 100/count）
@@ -134,6 +121,17 @@ const Keyboard = (function () {
     return startWhiteIndex;
   }
 
+  // 上/下移一個八度（7 個白鍵），鉗制不出界
+  function shiftOctave(delta) {
+    return setStartWhiteIndex(startWhiteIndex + delta * 7);
+  }
+
+  // 目前可視視窗最左白鍵的科學音名（如 C4），供八度顯示
+  function leftmostName() {
+    const k = whiteKeys[startWhiteIndex];
+    return k ? k.name : '';
+  }
+
   function maxStart() { return Math.max(0, whiteKeys.length - visibleWhiteCount); }
 
   function initKeyboard(el) {
@@ -147,8 +145,9 @@ const Keyboard = (function () {
 
   return {
     initKeyboard,
-    setVisibleWhiteCount, setStartWhiteIndex,
+    setVisibleWhiteCount, setStartWhiteIndex, shiftOctave,
     MIN_WHITE, MAX_WHITE,
+    get leftmostName() { return leftmostName(); },
     get totalWhites() { return whiteKeys.length; },
     get maxStartWhiteIndex() { return maxStart(); },
     get visibleWhiteCount() { return visibleWhiteCount; },

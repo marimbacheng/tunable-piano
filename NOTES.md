@@ -66,3 +66,8 @@
 - GitHub Pages:main / root,網址 https://marimbacheng.github.io/tunable-piano/(HTTPS 強制)。資產全相對路徑,子路徑正常。
 - 上線驗證:7 個資產皆 200;部署內容含最新(無 a4-preset、有 drone-stop、同步解鎖、stopAllDrones)。
 - 實機待確認:iOS Safari 解鎖後發聲、橫向、M4 拍點亮燈、觸感。離線 PWA 未做(Tone.js 仍走 CDN,屬 M6)。
+
+## 後續調整
+- **移除 Drone 功能**:依需求整包移除 —— audio.js(drones map / droneOn/Off/toggle/stopAll/isDrone/droneInfo / setA4 重新調音)、keyboard.js(長按 timer / .drone 視覺)、ui.js(停止 Drone 按鈕綁定)、index.html(按鈕)、css(.drone-stop / .key.drone)。keyboard 回到單純點按發聲。
+- **八度切換**:keyboard `shiftOctave(±1)` = 移動視窗 7 個白鍵(一個八度)、鉗制不出界;`leftmostName` 顯示視窗最左白鍵科學音名。控制列新增「八度」block(◀ / 音名 / ▶),與節拍器/A4/琴鍵數**同一列**。與卷軸共享視窗狀態:`refreshWindow()` 同步卷軸拇指 + 八度顯示(八度鈕、卷軸拖曳、改鍵數皆呼叫)。八度非新存欄位(由 startWhite 導出)。
+- 實測:drone API 皆 undefined、長按不生 drone、無殘留視覺、無 console error;八度 C4→(inc,頂端鉗制)F4、(dec×2)F2,顯示與拇指同步;版面 812×375 鍵盤 53% 仍 > 控制列+卷軸加總(八度在頂列、主音量換至第 2 列)。

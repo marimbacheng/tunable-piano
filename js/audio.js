@@ -19,7 +19,6 @@ const AudioEngine = (function () {
   let synth = null;            // Tone.PolySynth（點按音）
   let masterGain = null;      // 主音量（琴鍵 + drone）
   let shaper = null;          // 軟削波（安全級，保證輸出有界不爆音）
-  const drones = new Map();   // midi → 持續音 voice（獨立於 PolySynth，不套 2 秒 release）
 
   // 等律音高公式（僅平移基準）
   function midiToFreq(midi) {
@@ -54,17 +53,16 @@ const AudioEngine = (function () {
     synth.triggerAttackRelease(midiToFreq(midi), CONFIG.noteDuration);
   }
 
-  // 設定 A4（415–445 鉗制、步進 1 Hz）；回傳鉗制後的值。改基準後 drone 即時重新調音。
+  // 設定 A4（415–445 鉗制、步進 1 Hz）；回傳鉗制後的值。
   function setA4(hz) {
     const v = Math.round(Number(hz));
     a4 = Math.min(A4_MAX, Math.max(A4_MIN, Number.isFinite(v) ? v : a4));
-    drones.forEach((voice, midi) => { voice.frequency.value = midiToFreq(midi); });
     return a4;
   }
 
   function getA4() { return a4; }
 
-  // ===== 主音量（琴鍵 + drone；節拍器獨立） =====
+  // ===== 主音量（琴鍵;節拍器獨立） =====
   function setMasterVolume(v) {
     v = Math.min(1, Math.max(0, Number(v)));
     if (masterGain) masterGain.gain.value = v;
@@ -73,44 +71,10 @@ const AudioEngine = (function () {
   }
   function getMasterVolume() { return masterGain ? masterGain.gain.value : CONFIG.masterGain; }
 
-  // ===== Drone（獨立持續音，不套 2 秒 release，可解除） =====
-  function droneOn(midi) {
-    if (drones.has(midi) || !masterGain) return;
-    const voice = new Tone.Synth({
-      oscillator: CONFIG.oscillator,
-      envelope: { attack: 0.05, decay: 0.1, sustain: 1.0, release: 0.3 }   // 持續（不衰減），解除時短 release
-    }).connect(masterGain);
-    voice.triggerAttack(midiToFreq(midi));
-    drones.set(midi, voice);
-  }
-  function droneOff(midi) {
-    const voice = drones.get(midi);
-    if (!voice) return;
-    voice.triggerRelease();
-    setTimeout(() => voice.dispose(), 500);   // release 後回收
-    drones.delete(midi);
-  }
-  function droneToggle(midi) {
-    if (drones.has(midi)) { droneOff(midi); } else { droneOn(midi); }
-    return drones.has(midi);
-  }
-  function stopAllDrones() {
-    const midis = Array.from(drones.keys());
-    midis.forEach(function (m) { droneOff(m); });
-    return midis;
-  }
-  function isDrone(midi) { return drones.has(midi); }
-  function droneInfo() {
-    const out = [];
-    drones.forEach((voice, midi) => out.push({ midi: midi, freq: +voice.frequency.value.toFixed(2) }));
-    return out;
-  }
-
   return {
     A4_MIN, A4_MAX,
     init, playNote, midiToFreq, setA4, getA4,
     setMasterVolume, getMasterVolume,
-    droneOn, droneOff, droneToggle, stopAllDrones, isDrone, droneInfo,
     softClip,
     get config() { return CONFIG; },     // 供量測重建同一條鏈
     get output() { return shaper; }      // 供量測/除錯接分析器 + 節拍器接入軟削波

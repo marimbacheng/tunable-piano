@@ -34,6 +34,7 @@
       Keyboard.initKeyboard(document.getElementById('keyboard'));
       UI.initKeys();
       UI.initScrollbar();
+      UI.initOctave();
       UI.initMetronome();
       UI.initVolume();
       UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
