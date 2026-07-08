@@ -69,12 +69,85 @@ html, body {
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   padding:
-    env(safe-area-inset-top)
-    env(safe-area-inset-right)
-    env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
+    calc(env(safe-area-inset-top) + 8px)
+    calc(env(safe-area-inset-right) + 8px)
+    calc(env(safe-area-inset-bottom) + 8px)
+    calc(env(safe-area-inset-left) + 8px);
 }
-.placeholder { color: #555; font-size: 1rem; }
+
+/* ===== 控制列 ===== */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+.ctrl {
+  background: #22222a;
+  border: 1px solid #33333d;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.ctrl-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #9aa;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+.a4-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stepper {
+  width: 40px;
+  height: 40px;
+  font-size: 1.4rem;
+  line-height: 1;
+  border: 1px solid #4a90d9;
+  border-radius: 8px;
+  background: #1e2a3a;
+  color: #eaf2ff;
+  cursor: pointer;
+  touch-action: none;
+}
+.stepper:active { background: #2a3a52; }
+.a4-input {
+  width: 64px;
+  height: 40px;
+  text-align: center;
+  font-size: 1.1rem;
+  border: 1px solid #33333d;
+  border-radius: 8px;
+  background: #14141a;
+  color: #eaeaea;
+}
+/* 隱藏 number spinner，用自訂 −/＋ */
+.a4-input::-webkit-outer-spin-button,
+.a4-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.a4-input { -moz-appearance: textfield; }
+.a4-display {
+  min-width: 60px;
+  font-size: 0.95rem;
+  color: #8fd0ff;
+}
+.a4-presets {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.a4-preset {
+  flex: 1;
+  height: 32px;
+  font-size: 0.85rem;
+  border: 1px solid #33333d;
+  border-radius: 6px;
+  background: #1a1a20;
+  color: #ccd;
+  cursor: pointer;
+  touch-action: none;
+}
+.a4-preset:active { background: #2a2a34; }

@@ -22,6 +22,11 @@
       return;
     }
     console.log('[unlock] AudioContext state =', Tone.getContext().state);
+
+    // 解鎖後組裝各模組（需在 Tone.start() 之後）
+    AudioEngine.init();
+    UI.initA4();
+
     unlockEl.hidden = true;
     appEl.hidden = false;
   }

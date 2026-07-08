@@ -27,10 +27,31 @@
 
   <!-- 主畫面容器（M1 起長內容） -->
   <main id="app" class="app" hidden>
-    <p class="placeholder">主畫面（M1 起加入音訊與鍵盤）</p>
+    <!-- 控制列 -->
+    <div class="controls">
+      <!-- A4 基準音 -->
+      <div class="ctrl a4">
+        <span class="ctrl-label">A4 基準</span>
+        <div class="a4-row">
+          <button id="a4-dec" class="stepper" type="button" aria-label="A4 減 1">−</button>
+          <input id="a4-input" class="a4-input" type="number" inputmode="numeric"
+                 min="415" max="445" step="1" value="440">
+          <button id="a4-inc" class="stepper" type="button" aria-label="A4 加 1">＋</button>
+          <span id="a4-display" class="a4-display">440 Hz</span>
+        </div>
+        <div class="a4-presets">
+          <button class="a4-preset" type="button" data-hz="440">440</button>
+          <button class="a4-preset" type="button" data-hz="442">442</button>
+          <button class="a4-preset" type="button" data-hz="432">432</button>
+          <button class="a4-preset" type="button" data-hz="415">415</button>
+        </div>
+      </div>
+    </div>
   </main>
 
-  <!-- 相對路徑 -->
+  <!-- 相對路徑；載入順序：Tone(head) → audio → ui → main -->
+  <script src="js/audio.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
