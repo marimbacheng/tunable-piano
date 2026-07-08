@@ -59,3 +59,10 @@
 ## 收尾修正(M5 後)
 - **解鎖 bug(「點擊開始沒反應」)**:原 `unlock` 為 async 且整個 UI **gate 在 `await Tone.start()`**;若該 promise 未解析(iOS 邊界)或任一 init 拋錯,就停在解鎖畫面(按鈕只閃 :active、無反應)。改為**同步**:手勢內同步觸發 `Tone.start()`(不 await,resume 已在手勢內發生),立即建 UI,整段 `try/catch`,失敗即 `unlocked=false` 並讓錯誤浮現,絕不留死畫面。**註**:preview harness 的座標點擊在隱藏分頁不派送事件(`window.__ev` 空),無法在此重現使用者原始失敗;修法針對最可能成因,實機待確認。
 - **停止 Drone 按鈕**:`AudioEngine.stopAllDrones()` + 控制列按鈕,清所有 drone 與 `.key.drone` 視覺。解決 drone 鍵被捲出視窗/忘記哪顆而停不掉。實測建 drone→按鈕→drones=[]、無殘留視覺。
+- **版面(琴鍵占主要比例)**:移除 A4 預設鍵(440/442/432/415);主音量滑桿縮小 + 「停止 Drone」縮小併為單列;控制列整體緊湊化(stepper/input 40→32px、padding/label/gap 縮小)。鍵盤 `min-height:55%` 保底 + `flex:1`。實測:812×375 鍵盤占 67%、720×390(控制列換 2 行)占 53%,皆 > 控制列+卷軸加總。
+
+## 部署
+- GitHub:repo `marimbacheng/tunable-piano`(public),branch `main`。
+- GitHub Pages:main / root,網址 https://marimbacheng.github.io/tunable-piano/(HTTPS 強制)。資產全相對路徑,子路徑正常。
+- 上線驗證:7 個資產皆 200;部署內容含最新(無 a4-preset、有 drone-stop、同步解鎖、stopAllDrones)。
+- 實機待確認:iOS Safari 解鎖後發聲、橫向、M4 拍點亮燈、觸感。離線 PWA 未做(Tone.js 仍走 CDN,屬 M6)。
