@@ -36,3 +36,14 @@
 - **縮放錨點**:改鍵數保留左緣(startWhiteIndex 不動、僅必要時鉗回)。理由:行為可預期,實作簡潔。
 - 卷軸(ui.js):拇指寬 ∝ count/31、位置 ∝ start/maxStart;拖曳用 `setPointerCapture`+`pointermove` 換算 start;點軌道空白處視窗中心跳轉;`resize` 與改鍵數後重新 `sync()`。因 max 20<31 永遠可捲。
 - 實測:+/− 鉗制 6–20;白鍵寬即時 16.67%/8.33%/5%;拇指寬 19.35%/38.71%/64.52%(=count/31);start 0→A1(33)、maxStart 19→C6(84);拖曳超界鉗制(0 / 19);拖中間 start≈10;無 console error。
+
+## M4 — 節拍器
+- 排程:`Tone.Loop((time)=>…,'{den}n').start(0)` + `Tone.Transport`;每拍在精確 audio `time` 觸發 click,**非 setInterval 發聲**。
+- 節拍音:獨立 `Tone.Synth`(square,極短包絡)1000Hz/20ms,`toDestination`,與 PolySynth 分離,音量 −6dB。
+- 拍號:`beatsPerBar=numerator`(拍點數/循環)、`beatNote=denominator+'n'`(改 den 換 loop.interval);denominator∈{2,4,8}、numerator 1–12;目前無重音。
+- BPM:`Transport.bpm.value`,20–400 鉗制、步進 1。
+- tap:最近 2 下 `60000/Δms`,>3000ms 重置;`tap(now?)` now 可注入測試。
+- 視覺:`Tone.Draw.schedule(...,time)` 對齊 audio clock 點亮 dot。
+- **環境限制(明說)**:preview 分頁為 hidden(`document.hidden=true`、rAF 500ms 內 0 次),故 `Tone.Draw`/rAF 暫停、live dot 不亮 —— 非程式 bug,可見分頁/實機才會亮(留 M6 實機確認)。加測試探針 `_onClick`(排程時間)、`_fireBeat`(視覺映射,繞 rAF)以確定性驗證。
+- 背景節流不飄拍:Transport 用 audio-clock 前瞻排程,已排事件照 audio clock 觸發;headless 無法真模擬背景節流,以架構+time 均勻性佐證。
+- 實測:BPM120→間隔 **0.5000s**、jitter **0ms**;離線渲染 onset 0/0.5/1.0/1.5/2.0s 無累積漂移、peak 0.95;tap 1000/1500/1900→120/150、重置與 20/400 鉗制正確;4/4·3/4·6/8 → dots 4/3/6、beatIndex 循環正確、den→interval 0.5/0.5/0.25s;dot 映射 `_fireBeat` 正確;無 console error。

@@ -29,6 +29,31 @@
   <main id="app" class="app" hidden>
     <!-- 控制列 -->
     <div class="controls">
+      <!-- 節拍器（左上角） -->
+      <div class="ctrl metro">
+        <span class="ctrl-label">節拍器</span>
+        <div class="metro-row">
+          <button id="metro-toggle" class="metro-toggle" type="button" aria-label="啟停">▶</button>
+          <div class="bpm">
+            <button id="bpm-dec" class="stepper" type="button" aria-label="BPM 減">−</button>
+            <input id="bpm-input" class="bpm-input" type="number" inputmode="numeric" min="20" max="400" step="1" value="120">
+            <button id="bpm-inc" class="stepper" type="button" aria-label="BPM 加">＋</button>
+            <span class="bpm-unit">BPM</span>
+          </div>
+          <div id="tap" class="tap">tap</div>
+        </div>
+        <div class="metro-row2">
+          <div class="timesig">
+            <button id="num-dec" class="stepper small" type="button" aria-label="分子減">−</button>
+            <span id="ts-num" class="ts-num">4</span>
+            <span class="ts-slash">/</span>
+            <button id="den-cycle" class="den-cycle" type="button" aria-label="分母切換">4</button>
+            <button id="num-inc" class="stepper small" type="button" aria-label="分子加">＋</button>
+          </div>
+          <div id="beat-dots" class="beat-dots"></div>
+        </div>
+      </div>
+
       <!-- A4 基準音 -->
       <div class="ctrl a4">
         <span class="ctrl-label">A4 基準</span>
@@ -67,10 +92,11 @@
     <div id="keyboard" class="keyboard"></div>
   </main>
 
-  <!-- 相對路徑；載入順序：Tone(head) → audio → ui → keyboard → main -->
+  <!-- 相對路徑；載入順序：Tone(head) → audio → keyboard → metronome → ui → main -->
   <script src="js/audio.js"></script>
-  <script src="js/ui.js"></script>
   <script src="js/keyboard.js"></script>
+  <script src="js/metronome.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

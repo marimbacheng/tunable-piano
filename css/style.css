@@ -141,6 +141,89 @@ html, body {
   color: #eaeaea;
 }
 
+/* ===== 節拍器 ===== */
+.metro-row, .metro-row2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.metro-row2 { margin-top: 8px; }
+.metro-toggle {
+  width: 44px;
+  height: 40px;
+  font-size: 1.1rem;
+  border: 1px solid #4a90d9;
+  border-radius: 8px;
+  background: #1e2a3a;
+  color: #eaf2ff;
+  cursor: pointer;
+  touch-action: none;
+}
+.metro-toggle.on { background: #2f6d3a; border-color: #4caf50; }
+.bpm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bpm-input {
+  width: 58px;
+  height: 40px;
+  text-align: center;
+  font-size: 1.05rem;
+  border: 1px solid #33333d;
+  border-radius: 8px;
+  background: #14141a;
+  color: #eaeaea;
+}
+.bpm-input::-webkit-outer-spin-button,
+.bpm-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.bpm-input { -moz-appearance: textfield; }
+.bpm-unit { font-size: 0.75rem; color: #9aa; }
+.tap {
+  width: 56px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: #cdd;
+  background: #2a2f3a;
+  border: 1px solid #444b5a;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: none;
+}
+.tap:active { background: #3a4150; }
+.timesig {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.stepper.small { width: 30px; height: 30px; font-size: 1.1rem; }
+.ts-num { min-width: 18px; text-align: center; font-size: 1rem; }
+.ts-slash { color: #9aa; }
+.den-cycle {
+  width: 30px; height: 30px;
+  font-size: 1rem;
+  border: 1px solid #33333d;
+  border-radius: 6px;
+  background: #1a1a20;
+  color: #eaeaea;
+  cursor: pointer;
+  touch-action: none;
+}
+.beat-dots {
+  display: flex;
+  gap: 6px;
+  margin-left: 6px;
+}
+.beat-dots .dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #3a3a44;
+}
+.beat-dots .dot.active { background: #8fd0ff; }
+
 /* ===== 上方卷軸 ===== */
 .scrollbar {
   position: relative;

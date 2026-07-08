@@ -132,7 +132,49 @@ const UI = (function () {
     sync();
   }
 
-  return { initA4, initKeys, initScrollbar };
+  // ===== 節拍器 =====
+  function initMetronome() {
+    const $ = id => document.getElementById(id);
+    const toggleBtn = $('metro-toggle');
+    const bpmInput = $('bpm-input'), bpmDec = $('bpm-dec'), bpmInc = $('bpm-inc');
+    const tapEl = $('tap');
+    const tsNum = $('ts-num'), denBtn = $('den-cycle'), numDec = $('num-dec'), numInc = $('num-inc');
+    const dots = $('beat-dots');
+
+    function renderBpm() { bpmInput.value = String(Metronome.getBpm()); }
+    function renderDots(n) {
+      dots.innerHTML = '';
+      for (let i = 0; i < n; i++) { const d = document.createElement('span'); d.className = 'dot'; dots.appendChild(d); }
+    }
+    function renderTs() {
+      const ts = Metronome.getTimeSignature();
+      tsNum.textContent = String(ts.numerator);
+      denBtn.textContent = String(ts.denominator);
+      renderDots(ts.numerator);
+    }
+    function renderToggle() {
+      toggleBtn.textContent = Metronome.isRunning() ? '⏸' : '▶';
+      toggleBtn.classList.toggle('on', Metronome.isRunning());
+    }
+    function highlight(index) {
+      const ds = dots.querySelectorAll('.dot');
+      for (let i = 0; i < ds.length; i++) ds[i].classList.toggle('active', i === index);
+    }
+
+    Metronome.init(highlight);        // onBeat(index,total) → 亮點
+    renderBpm(); renderTs(); renderToggle();
+
+    toggleBtn.addEventListener('pointerdown', e => { e.preventDefault(); Metronome.toggle(); renderToggle(); if (!Metronome.isRunning()) highlight(-1); });
+    bpmDec.addEventListener('pointerdown', e => { e.preventDefault(); Metronome.setBpm(Metronome.getBpm() - 1); renderBpm(); });
+    bpmInc.addEventListener('pointerdown', e => { e.preventDefault(); Metronome.setBpm(Metronome.getBpm() + 1); renderBpm(); });
+    bpmInput.addEventListener('change', () => { Metronome.setBpm(bpmInput.value); renderBpm(); });
+    tapEl.addEventListener('pointerdown', e => { e.preventDefault(); const r = Metronome.tap(); if (r != null) renderBpm(); });
+    numDec.addEventListener('pointerdown', e => { e.preventDefault(); const ts = Metronome.getTimeSignature(); Metronome.setTimeSignature(ts.numerator - 1, ts.denominator); renderTs(); });
+    numInc.addEventListener('pointerdown', e => { e.preventDefault(); const ts = Metronome.getTimeSignature(); Metronome.setTimeSignature(ts.numerator + 1, ts.denominator); renderTs(); });
+    denBtn.addEventListener('pointerdown', e => { e.preventDefault(); Metronome.cycleDenominator(); renderTs(); });
+  }
+
+  return { initA4, initKeys, initScrollbar, initMetronome };
 })();
 
 window.UI = UI;

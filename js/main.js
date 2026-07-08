@@ -29,6 +29,7 @@
     Keyboard.initKeyboard(document.getElementById('keyboard'));
     UI.initKeys();
     UI.initScrollbar();
+    UI.initMetronome();
 
     unlockEl.hidden = true;
     appEl.hidden = false;
