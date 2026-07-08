@@ -150,6 +150,19 @@ html, body {
   touch-action: none;
 }
 .vol-display { min-width: 28px; text-align: right; font-size: 0.95rem; color: #8fd0ff; }
+.drone-stop {
+  margin-top: 8px;
+  width: 100%;
+  height: 34px;
+  font-size: 0.85rem;
+  border: 1px solid #a5642a;
+  border-radius: 8px;
+  background: #3a2a1a;
+  color: #ffcf9a;
+  cursor: pointer;
+  touch-action: none;
+}
+.drone-stop:active { background: #4a3624; }
 
 /* ===== 節拍器 ===== */
 .metro-row, .metro-row2 {

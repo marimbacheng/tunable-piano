@@ -240,6 +240,14 @@ const UI = (function () {
       display.textContent = input.value;
       persist();
     });
+
+    // 停止全部 Drone（解決捲出視窗/忘記哪顆而停不掉的情況）
+    const droneStop = document.getElementById('drone-stop');
+    droneStop.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      AudioEngine.stopAllDrones();
+      document.querySelectorAll('.key.drone').forEach(function (el) { el.classList.remove('drone'); });
+    });
   }
 
   return { initA4, initKeys, initScrollbar, initMetronome, initVolume, loadAndApply };

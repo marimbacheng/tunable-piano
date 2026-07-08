@@ -55,3 +55,7 @@
 - **狀態保存**:localStorage `tunable-piano-v1` 存 `{a4,volume,bpm,num,den,whiteCount,startWhite}`,去抖 150ms;`loadAndApply()` 開場套用 + `refreshers` 統一刷新顯示。drone/播放中不存。
 - **Bug(修正)**:卷軸 `sync()` 在 `#app` 仍 hidden 時執行 → `clientWidth=0` → 拇指寬 `NaN%` 未設(fresh load 拇指空白)。根因:main.js 先 init 模組才顯示 app。修法:**先 `appEl.hidden=false` 再** init 需量測 DOM 的模組。修後 fresh load 拇指寬 32.26%(=10/31)正確。
 - 實測:主音量 setter/clamp(0/1)、離線 peak 比例 0.5;drone on/off、A4 440→432 drone 261.63→256.87;長按切換 + 重繪保留 + 短按不切;localStorage 存檔與 reload 還原(引擎+顯示全對);無 console error。
+
+## 收尾修正(M5 後)
+- **解鎖 bug(「點擊開始沒反應」)**:原 `unlock` 為 async 且整個 UI **gate 在 `await Tone.start()`**;若該 promise 未解析(iOS 邊界)或任一 init 拋錯,就停在解鎖畫面(按鈕只閃 :active、無反應)。改為**同步**:手勢內同步觸發 `Tone.start()`(不 await,resume 已在手勢內發生),立即建 UI,整段 `try/catch`,失敗即 `unlocked=false` 並讓錯誤浮現,絕不留死畫面。**註**:preview harness 的座標點擊在隱藏分頁不派送事件(`window.__ev` 空),無法在此重現使用者原始失敗;修法針對最可能成因,實機待確認。
+- **停止 Drone 按鈕**:`AudioEngine.stopAllDrones()` + 控制列按鈕,清所有 drone 與 `.key.drone` 視覺。解決 drone 鍵被捲出視窗/忘記哪顆而停不掉。實測建 drone→按鈕→drones=[]、無殘留視覺。

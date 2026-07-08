@@ -11,33 +11,36 @@
   // ===== 手勢解鎖 AudioContext =====
   let unlocked = false;
 
-  async function unlock() {
-    if (unlocked) return;      // 旗標防重入：pointerdown 與 click 只會實際跑一次
+  // 同步執行、絕不卡在未定的 promise：在手勢內觸發 resume，但不 await，
+  // 立即建 UI;整段 try/catch,任何失敗都不留下「按了沒反應」的死畫面。
+  function unlock() {
+    if (unlocked) return;      // 旗標防重入：pointerdown 與 click 只實際跑一次
     unlocked = true;
     try {
-      await Tone.start();      // 必須在使用者手勢內呼叫
+      // 在使用者手勢內同步觸發 AudioContext resume（iOS 要求）；不 await
+      const p = Tone.start();
+      if (p && typeof p.catch === 'function') {
+        p.catch(function (err) { console.error('[unlock] Tone.start() 失敗:', err); });
+      }
+
+      AudioEngine.init();
+
+      // 先顯示主畫面，讓容器有版面尺寸（卷軸 sync 需正確 clientWidth）
+      unlockEl.hidden = true;
+      appEl.hidden = false;
+
+      // 再組裝需量測/渲染 DOM 的模組
+      UI.initA4();
+      Keyboard.initKeyboard(document.getElementById('keyboard'));
+      UI.initKeys();
+      UI.initScrollbar();
+      UI.initMetronome();
+      UI.initVolume();
+      UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
     } catch (err) {
-      unlocked = false;        // 失敗則允許再試
-      console.error('[unlock] Tone.start() 失敗:', err);
-      return;
+      unlocked = false;       // 允許再試，並讓錯誤浮現而非靜默死畫面
+      console.error('[unlock] 初始化失敗:', err);
     }
-    console.log('[unlock] AudioContext state =', Tone.getContext().state);
-
-    // 音訊引擎（不需 DOM）
-    AudioEngine.init();
-
-    // 先顯示主畫面，讓容器有版面尺寸（卷軸 sync 需正確 clientWidth，否則量到 0）
-    unlockEl.hidden = true;
-    appEl.hidden = false;
-
-    // 再組裝需量測/渲染 DOM 的模組
-    UI.initA4();
-    Keyboard.initKeyboard(document.getElementById('keyboard'));
-    UI.initKeys();
-    UI.initScrollbar();
-    UI.initMetronome();
-    UI.initVolume();
-    UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
   }
 
   // pointerdown 為主（低延遲），click 為桌機/後備；旗標確保單次執行

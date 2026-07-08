@@ -94,6 +94,11 @@ const AudioEngine = (function () {
     if (drones.has(midi)) { droneOff(midi); } else { droneOn(midi); }
     return drones.has(midi);
   }
+  function stopAllDrones() {
+    const midis = Array.from(drones.keys());
+    midis.forEach(function (m) { droneOff(m); });
+    return midis;
+  }
   function isDrone(midi) { return drones.has(midi); }
   function droneInfo() {
     const out = [];
@@ -105,7 +110,7 @@ const AudioEngine = (function () {
     A4_MIN, A4_MAX,
     init, playNote, midiToFreq, setA4, getA4,
     setMasterVolume, getMasterVolume,
-    droneOn, droneOff, droneToggle, isDrone, droneInfo,
+    droneOn, droneOff, droneToggle, stopAllDrones, isDrone, droneInfo,
     softClip,
     get config() { return CONFIG; },     // 供量測重建同一條鏈
     get output() { return shaper; }      // 供量測/除錯接分析器 + 節拍器接入軟削波
