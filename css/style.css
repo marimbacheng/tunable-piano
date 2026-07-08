@@ -71,44 +71,44 @@ html, body {
   display: flex;
   flex-direction: column;
   padding:
-    calc(env(safe-area-inset-top) + 8px)
-    calc(env(safe-area-inset-right) + 8px)
-    calc(env(safe-area-inset-bottom) + 8px)
-    calc(env(safe-area-inset-left) + 8px);
+    calc(env(safe-area-inset-top) + 6px)
+    calc(env(safe-area-inset-right) + 6px)
+    calc(env(safe-area-inset-bottom) + 6px)
+    calc(env(safe-area-inset-left) + 6px);
 }
 
-/* ===== 控制列 ===== */
+/* ===== 控制列（緊湊，讓琴鍵占畫面主要比例） ===== */
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 6px;
   align-items: flex-start;
 }
 .ctrl {
   background: #22222a;
   border: 1px solid #33333d;
-  border-radius: 10px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 4px 7px;
 }
 .ctrl-label {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.58rem;
   color: #9aa;
-  margin-bottom: 6px;
-  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+  letter-spacing: 0.04em;
 }
 .a4-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .stepper {
-  width: 40px;
-  height: 40px;
-  font-size: 1.4rem;
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
   line-height: 1;
   border: 1px solid #4a90d9;
-  border-radius: 8px;
+  border-radius: 7px;
   background: #1e2a3a;
   color: #eaf2ff;
   cursor: pointer;
@@ -116,10 +116,10 @@ html, body {
 }
 .stepper:active { background: #2a3a52; }
 .a4-input {
-  width: 64px;
-  height: 40px;
+  width: 54px;
+  height: 32px;
   text-align: center;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   border: 1px solid #33333d;
   border-radius: 8px;
   background: #14141a;
@@ -141,22 +141,22 @@ html, body {
   color: #eaeaea;
 }
 
-/* ===== 主音量 ===== */
-.vol-row { display: flex; align-items: center; gap: 8px; }
+/* ===== 主音量 + 停止 Drone（緊湊單列） ===== */
+.vol-row { display: flex; align-items: center; gap: 6px; }
 .vol-input {
-  width: 130px;
-  height: 40px;
+  width: 78px;
+  height: 26px;
   accent-color: #4a90d9;
   touch-action: none;
 }
-.vol-display { min-width: 28px; text-align: right; font-size: 0.95rem; color: #8fd0ff; }
+.vol-display { min-width: 22px; text-align: right; font-size: 0.85rem; color: #8fd0ff; }
 .drone-stop {
-  margin-top: 8px;
-  width: 100%;
-  height: 34px;
-  font-size: 0.85rem;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+  white-space: nowrap;
   border: 1px solid #a5642a;
-  border-radius: 8px;
+  border-radius: 7px;
   background: #3a2a1a;
   color: #ffcf9a;
   cursor: pointer;
@@ -168,13 +168,13 @@ html, body {
 .metro-row, .metro-row2 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
-.metro-row2 { margin-top: 8px; }
+.metro-row2 { margin-top: 4px; }
 .metro-toggle {
-  width: 44px;
-  height: 40px;
-  font-size: 1.1rem;
+  width: 38px;
+  height: 32px;
+  font-size: 1rem;
   border: 1px solid #4a90d9;
   border-radius: 8px;
   background: #1e2a3a;
@@ -186,13 +186,13 @@ html, body {
 .bpm {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .bpm-input {
-  width: 58px;
-  height: 40px;
+  width: 50px;
+  height: 32px;
   text-align: center;
-  font-size: 1.05rem;
+  font-size: 1rem;
   border: 1px solid #33333d;
   border-radius: 8px;
   background: #14141a;
@@ -203,8 +203,8 @@ html, body {
 .bpm-input { -moz-appearance: textfield; }
 .bpm-unit { font-size: 0.75rem; color: #9aa; }
 .tap {
-  width: 56px;
-  height: 40px;
+  width: 44px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,12 +222,12 @@ html, body {
   align-items: center;
   gap: 4px;
 }
-.stepper.small { width: 30px; height: 30px; font-size: 1.1rem; }
-.ts-num { min-width: 18px; text-align: center; font-size: 1rem; }
+.stepper.small { width: 26px; height: 26px; font-size: 1rem; }
+.ts-num { min-width: 16px; text-align: center; font-size: 0.95rem; }
 .ts-slash { color: #9aa; }
 .den-cycle {
-  width: 30px; height: 30px;
-  font-size: 1rem;
+  width: 26px; height: 26px;
+  font-size: 0.95rem;
   border: 1px solid #33333d;
   border-radius: 6px;
   background: #1a1a20;
@@ -237,11 +237,11 @@ html, body {
 }
 .beat-dots {
   display: flex;
-  gap: 6px;
-  margin-left: 6px;
+  gap: 5px;
+  margin-left: 4px;
 }
 .beat-dots .dot {
-  width: 12px; height: 12px;
+  width: 9px; height: 9px;
   border-radius: 50%;
   background: #3a3a44;
 }
@@ -250,11 +250,11 @@ html, body {
 /* ===== 上方卷軸 ===== */
 .scrollbar {
   position: relative;
-  height: 22px;
-  margin-top: 8px;
+  height: 15px;
+  margin-top: 5px;
   background: #22222a;
   border: 1px solid #33333d;
-  border-radius: 11px;
+  border-radius: 8px;
   touch-action: none;
 }
 .thumb {
@@ -262,37 +262,20 @@ html, body {
   top: 2px;
   bottom: 2px;
   left: 0;
-  min-width: 24px;
+  min-width: 20px;
   background: #4a5568;
-  border-radius: 9px;
+  border-radius: 6px;
   cursor: grab;
   touch-action: none;
 }
 .thumb:active { cursor: grabbing; background: #5a6a86; }
-.a4-presets {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-}
-.a4-preset {
-  flex: 1;
-  height: 32px;
-  font-size: 0.85rem;
-  border: 1px solid #33333d;
-  border-radius: 6px;
-  background: #1a1a20;
-  color: #ccd;
-  cursor: pointer;
-  touch-action: none;
-}
-.a4-preset:active { background: #2a2a34; }
 
-/* ===== 鍵盤（傳統鋼琴：白鍵滿高、黑鍵較窄疊上方） ===== */
+/* ===== 鍵盤（傳統鋼琴：白鍵滿高、黑鍵較窄疊上方；占畫面主要比例） ===== */
 .keyboard {
   position: relative;
   flex: 1 1 auto;
-  min-height: 0;
-  margin-top: 10px;
+  min-height: 55%;
+  margin-top: 6px;
   background: #0d0d10;
   border-radius: 6px;
   overflow: hidden;

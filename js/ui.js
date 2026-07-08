@@ -62,10 +62,9 @@ const UI = (function () {
 
   function initA4() {
     a4Input = document.getElementById('a4-input');
-    a4Display = document.getElementById('a4-display');
+    a4Display = document.getElementById('a4-display');   // 已移除;render 內有 null 防護
     const dec = document.getElementById('a4-dec');
     const inc = document.getElementById('a4-inc');
-    const presets = document.querySelectorAll('.a4-preset');
 
     // 初始同步顯示（AudioEngine 預設 440）
     render(AudioEngine.getA4());
@@ -83,13 +82,6 @@ const UI = (function () {
     // 數字輸入：change 時鉗制回寫
     a4Input.addEventListener('change', function () {
       apply(a4Input.value);
-    });
-
-    presets.forEach(function (btn) {
-      btn.addEventListener('pointerdown', function (e) {
-        e.preventDefault();
-        apply(btn.dataset.hz);
-      });
     });
   }
 

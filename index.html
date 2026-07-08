@@ -62,13 +62,7 @@
           <input id="a4-input" class="a4-input" type="number" inputmode="numeric"
                  min="415" max="445" step="1" value="440">
           <button id="a4-inc" class="stepper" type="button" aria-label="A4 加 1">＋</button>
-          <span id="a4-display" class="a4-display">440 Hz</span>
-        </div>
-        <div class="a4-presets">
-          <button class="a4-preset" type="button" data-hz="440">440</button>
-          <button class="a4-preset" type="button" data-hz="442">442</button>
-          <button class="a4-preset" type="button" data-hz="432">432</button>
-          <button class="a4-preset" type="button" data-hz="415">415</button>
+          <span class="bpm-unit">Hz</span>
         </div>
       </div>
 
@@ -82,14 +76,14 @@
         </div>
       </div>
 
-      <!-- 主音量 + 停止 Drone -->
+      <!-- 主音量 + 停止 Drone（緊湊單列） -->
       <div class="ctrl vol">
         <span class="ctrl-label">主音量</span>
         <div class="vol-row">
           <input id="vol-input" class="vol-input" type="range" min="0" max="100" step="1" value="60">
           <span id="vol-display" class="vol-display">60</span>
+          <button id="drone-stop" class="drone-stop" type="button">■ Drone</button>
         </div>
-        <button id="drone-stop" class="drone-stop" type="button">■ 停止 Drone</button>
       </div>
     </div>
 
