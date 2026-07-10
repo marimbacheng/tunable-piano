@@ -13,7 +13,7 @@ const AudioEngine = (function () {
     // 長按持續：sustain 段維持發聲，放開後 release 收尾;短點一下≈原本 ~2 秒尾音
     envelope: { attack: 0.01, decay: 0.15, sustain: 0.8, release: 1.8 },
     masterGain: 1.0,        // 主音量固定 100%（音量交給裝置硬體鍵）
-    voiceDb: -12,           // 每聲部預留 headroom：3 音和弦峰值 <0.7（knee）全線性 → 修破音感
+    voiceDb: -13,           // 每聲部預留 headroom：3/4 音和弦峰值皆 <0.7（knee）全線性 → 修破音感
     softKnee: 0.7           // 軟削波拐點：|x|≤knee 完全線性（乾淨），之上平滑飽和（安全網）
   };
 

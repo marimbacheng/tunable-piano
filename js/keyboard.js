@@ -46,6 +46,7 @@ const Keyboard = (function () {
     // 重繪前先收掉按住中的音，避免元素被移除後 release 配不到而殘響不止
     pressed.forEach(function (rec) {
       if (rec && rec.freqs) rec.freqs.forEach(function (f) { AudioEngine.noteOff(f); });
+      if (rec && rec.midis) rec.midis.forEach(heldRemove);
     });
     pressed.clear();
 
@@ -92,23 +93,54 @@ const Keyboard = (function () {
     return el;
   }
 
-  // ===== 和弦模式（順階和弦） =====
-  // 鍵盤即為首調的音階（C4 鍵＝主音 do）;白鍵 pc → 該級數的三和弦半音距。
+  // ===== 和弦模式 =====
+  // 順階：鍵盤即為首調的音階（C4 鍵＝主音 do）;白鍵 pc → 該級數的三和弦半音距。
   // C:I 大、D:ii 小、E:iii 小、F:IV 大、G:V 大、A:vi 小、B:vii° 減。
   const DIATONIC = { 0:[0,4,7], 2:[0,3,7], 4:[0,3,7], 5:[0,4,7], 7:[0,4,7], 9:[0,3,7], 11:[0,3,6] };
   const MAJOR_TRIAD = [0, 4, 7];
+  // 指定品質：按下的鍵為根音，疊出所選和弦
+  const QUALITIES = {
+    maj:   [0, 4, 7],
+    min:   [0, 3, 7],
+    dim:   [0, 3, 6],
+    maj7:  [0, 4, 7, 11],
+    dom7:  [0, 4, 7, 10],
+    min7:  [0, 3, 7, 10],
+    hdim7: [0, 3, 6, 10]
+  };
   let chordMode = false;
-  let forceMajor = false;   // 「強制大三和弦」鈕按住時 true（調外和弦用）
+  let chordQuality = 'diatonic';   // 'diatonic' | QUALITIES 之一
 
   function setChordMode(on) { chordMode = !!on; return chordMode; }
-  function setForceMajor(on) { forceMajor = !!on; return forceMajor; }
+  function setChordQuality(q) {
+    chordQuality = (q === 'diatonic' || QUALITIES[q]) ? q : 'diatonic';
+    return chordQuality;
+  }
   function isChordMode() { return chordMode; }
+  function getChordQuality() { return chordQuality; }
 
   // 依模式算出這次按下要發的 midi 組（鍵盤空間;首調位移由 AudioEngine 套用）
   function chordMidis(midi) {
     if (!chordMode) return [midi];
-    const intervals = forceMajor ? MAJOR_TRIAD : (DIATONIC[midi % 12] || MAJOR_TRIAD);
+    const intervals = (chordQuality === 'diatonic')
+      ? (DIATONIC[midi % 12] || MAJOR_TRIAD)
+      : QUALITIES[chordQuality];
     return intervals.map(function (iv) { return midi + iv; });
+  }
+
+  // ===== 按住音追蹤（供和弦辨識顯示） =====
+  const held = new Map();          // midi → 按住計數（同鍵可被多指按）
+  let onHeldChange = null;         // cb(sortedMidis[])：按住集合變動時通知
+
+  function notifyHeld() {
+    if (onHeldChange) onHeldChange(Array.from(held.keys()).sort(function (a, b) { return a - b; }));
+  }
+  function heldAdd(m) { held.set(m, (held.get(m) || 0) + 1); notifyHeld(); }
+  function heldRemove(m) {
+    const c = held.get(m);
+    if (c == null) return;
+    if (c <= 1) held.delete(m); else held.set(m, c - 1);
+    notifyHeld();
   }
 
   function keyEl(midi) {
@@ -124,10 +156,11 @@ const Keyboard = (function () {
     midis.forEach(function (m) {
       const f = AudioEngine.noteOn(m);       // 按住持續發聲，放開才進 release
       if (f != null) freqs.push(f);
+      heldAdd(m);                            // 供和弦辨識（含畫面外的音）
       const ke = keyEl(m);                   // 視覺顯示所有觸發的音（可視範圍內）
       if (ke) { ke.classList.add('active'); els.push(ke); }
     });
-    pressed.set(e.pointerId, { els: els, freqs: freqs });
+    pressed.set(e.pointerId, { els: els, freqs: freqs, midis: midis });
     try { if (e.pointerId != null) el.setPointerCapture(e.pointerId); } catch (_) {}
   }
 
@@ -135,6 +168,7 @@ const Keyboard = (function () {
     const rec = pressed.get(e.pointerId);
     if (!rec) return;
     rec.freqs.forEach(function (f) { AudioEngine.noteOff(f); });   // 放開才收音
+    rec.midis.forEach(heldRemove);
     rec.els.forEach(function (el) { el.classList.remove('active'); });
     pressed.delete(e.pointerId);
   }
@@ -182,7 +216,8 @@ const Keyboard = (function () {
   return {
     initKeyboard,
     setVisibleWhiteCount, setStartWhiteIndex, shiftOctave,
-    setChordMode, setForceMajor, isChordMode,
+    setChordMode, isChordMode, setChordQuality, getChordQuality,
+    set onHeldChange(cb) { onHeldChange = cb; },
     MIN_WHITE, MAX_WHITE,
     get leftmostName() { return leftmostName(); },
     get totalWhites() { return whiteKeys.length; },

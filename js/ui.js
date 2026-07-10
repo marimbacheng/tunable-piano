@@ -259,21 +259,62 @@ const UI = (function () {
     inc.addEventListener('pointerdown', function (e) { e.preventDefault(); AudioEngine.setTranspose(AudioEngine.getTranspose() + 1); render(); persist(); });
   }
 
-  // ===== 和弦模式（順階和弦;按住「強制大」出調外大三和弦） =====
+  // ===== 和弦模式（順階/指定品質）+ 和弦辨識顯示 =====
+  // 辨識模板：相對根音的半音集合 → 和弦代號後綴
+  const CHORD_TEMPLATES = {
+    '0,4,7': '',        // Major
+    '0,3,7': 'm',       // Minor
+    '0,3,6': 'dim',     // Diminished
+    '0,4,8': 'aug',     // Augmented（順手支援）
+    '0,4,7,11': 'M7',   // Major 7
+    '0,4,7,10': '7',    // Dominant 7
+    '0,3,7,10': 'm7',   // Minor 7
+    '0,3,6,10': 'ø7',   // Half-Diminished 7
+    '0,3,6,9': 'dim7'   // Diminished 7（順手支援）
+  };
+
+  // 依實際發聲音高辨識（含首調位移）;由低到高逐一嘗試根音,涵蓋轉位
+  function recognizeChord(keyboardMidis) {
+    const t = AudioEngine.getTranspose();
+    const sounded = keyboardMidis.map(function (m) { return m + t; });
+    const pcs = [];                       // 唯一 pc,依實際音高低→高排序
+    sounded.forEach(function (m) {
+      const pc = ((m % 12) + 12) % 12;
+      if (pcs.indexOf(pc) < 0) pcs.push(pc);
+    });
+    if (pcs.length < 3) return null;
+    for (let i = 0; i < pcs.length; i++) {
+      const root = pcs[i];
+      const rel = pcs.map(function (p) { return (p - root + 12) % 12; }).sort(function (a, b) { return a - b; });
+      const suffix = CHORD_TEMPLATES[rel.join(',')];
+      if (suffix !== undefined) return PC_NAMES[root] + suffix;
+    }
+    return null;
+  }
+
   function initChord() {
     const toggle = document.getElementById('chord-toggle');
-    const major = document.getElementById('chord-major');
+    const display = document.getElementById('chord-display');
     toggle.addEventListener('pointerdown', function (e) {
       e.preventDefault();
       const on = Keyboard.setChordMode(!Keyboard.isChordMode());
       toggle.classList.toggle('on', on);
     });
-    // 按住期間強制大三和弦，放開恢復順階
-    major.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.setForceMajor(true); major.classList.add('on'); });
-    const offMajor = function () { Keyboard.setForceMajor(false); major.classList.remove('on'); };
-    major.addEventListener('pointerup', offMajor);
-    major.addEventListener('pointercancel', offMajor);
-    major.addEventListener('pointerleave', offMajor);
+    // 品質選擇：順階 or 指定品質（單選）
+    const quals = document.querySelectorAll('.qual');
+    quals.forEach(function (btn) {
+      btn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        Keyboard.setChordQuality(btn.dataset.q);
+        quals.forEach(function (b) { b.classList.toggle('on', b === btn); });
+      });
+    });
+    // 和弦辨識：按住集合變動即重算（同時涵蓋和弦模式與手動按的多音）
+    Keyboard.onHeldChange = function (midis) {
+      const name = recognizeChord(midis);
+      display.textContent = name || '—';
+      display.classList.toggle('lit', !!name);
+    };
   }
 
   // ===== 主題 =====

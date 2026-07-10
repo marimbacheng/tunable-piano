@@ -165,8 +165,8 @@ html, body {
 /* ===== 首調 ===== */
 .tr-display { min-width: 52px; white-space: nowrap; }
 
-/* ===== 和弦模式 ===== */
-.chord-toggle, .chord-major {
+/* ===== 和弦模式 + 辨識顯示 ===== */
+.chord-toggle {
   height: 32px;
   padding: 0 10px;
   font-size: 0.8rem;
@@ -179,7 +179,34 @@ html, body {
   touch-action: none;
 }
 .chord-toggle.on { background: #2f6d3a; border-color: #4caf50; color: #eaffea; }
-.chord-major.on { background: #6d5a2f; border-color: #d0a840; color: #fff3d0; }
+.chord-display {
+  min-width: 52px;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #555a66;                 /* 無和弦時黯淡 */
+}
+.chord-display.lit { color: #8fd0ff; }   /* 辨識到和弦時亮起 */
+.chord-quals {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.qual {
+  height: 26px;
+  padding: 0 6px;
+  font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid #33333d;
+  border-radius: 5px;
+  background: #1a1a20;
+  color: #ccd;
+  cursor: pointer;
+  touch-action: none;
+}
+.qual:active { background: #2a2a34; }
+.qual.on { background: #1e3a52; border-color: #4a90d9; color: #cfe6ff; }
 
 /* ===== 主題切換（小色塊） ===== */
 .theme-row { gap: 6px; }
@@ -195,7 +222,7 @@ html, body {
 .swatch.on { border-color: #4a90d9; }
 .swatch-classic { background: linear-gradient(135deg, #f4f4ef 50%, #1b1b22 50%); }
 .swatch-gray    { background: linear-gradient(135deg, #4a4a52 50%, #0e0e12 50%); }
-.swatch-pink    { background: linear-gradient(135deg, #ffffff 50%, #f2799f 50%); }
+.swatch-pink    { background: linear-gradient(135deg, #ffffff 50%, #ecb3cb 50%); }
 
 /* ===== 節拍器 ===== */
 .metro-row, .metro-row2 {
@@ -378,9 +405,9 @@ body.theme-gray {
   --bk: #0e0e12;
   --bk-active: #3c465e;
 }
-/* 粉紅：黑鍵=粉紅、白鍵=白 */
+/* 粉紅：黑鍵=粉紅（#ECB3CB / PANTONE 203 C）、白鍵=白 */
 body.theme-pink {
-  --bk: #f2799f;
-  --bk-active: #d94f7d;
-  --bk-border: #b03c63;
+  --bk: #ecb3cb;
+  --bk-active: #d68fb0;
+  --bk-border: #c07b9b;
 }

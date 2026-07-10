@@ -83,3 +83,10 @@
 - **黑白鍵交界陰影**:黑鍵 box-shadow 左右/下 3px 窄範圍淺陰影。
 - **主題**:CSS 變數 + body class;「經典」「深灰(白鍵=深灰)」「粉紅(黑鍵=粉紅)」三選,小圓色塊切換,persist。
 - **版面 bug(修正)**:控制列變高後 scrollbar 被 flex 壓到 2px 無法拖曳 → `.controls`/`.scrollbar` 加 `flex-shrink:0`,鍵盤 min-height 55%→48%。修後 scrollbar 15px、無 overflow、鍵盤 50% 仍 dominant。
+
+## 和弦強化 + 粉紅色號
+- **粉紅色號**:`--bk` 改 #ECB3CB(PANTONE 203 C),active #d68fb0、border #c07b9b,swatch 同步。實測 rgb(236,179,203)。
+- **和弦品質選擇**:「強制大」按住鈕**移除**,改品質單選列(順階/M/m/dim/M7/7/m7/ø7)與和弦鈕同一行 —— 理由:按住鈕只能出大三和弦,選擇列通用且單手可操作。`QUALITIES` 表:maj[0,4,7]、min[0,3,7]、dim[0,3,6]、maj7[0,4,7,11]、dom7[0,4,7,10]、min7[0,3,7,10]、hdim7[0,3,6,10];順階=原 DIATONIC。實測七種品質音組與代號皆正確(CM7/C7/Dm7/Dø7/Bdim/Cm/順階 Dm)。
+- **和弦辨識**:keyboard 追蹤按住音集合(`held` 計數 map + `onHeldChange` 回呼),ui `recognizeChord`:唯一 pc 依實際音高低→高當根音候選,相對半音集合比對模板(含 aug/dim7 順手支援);**依實際發聲音高**(含首調)命名。同一顯示器同時服務和弦模式與手動按音。實測 CEGB→CM7、CEG→C、轉位 EGC→C、首調+2 按 CEG→D、放開→「—」。
+- **headroom 再修**:4 音和弦峰值 0.762 略過 knee → `voiceDb -12→-13`,實測 3 音 0.571、4 音 0.680 皆 <0.7 全線性。
+- **版面**:和弦區改單行後控制列 150px、鍵盤 187px(dominant)、無 overflow。

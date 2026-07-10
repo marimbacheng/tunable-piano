@@ -102,12 +102,22 @@
         </div>
       </div>
 
-      <!-- 和弦模式 -->
+      <!-- 和弦模式 + 辨識顯示 -->
       <div class="ctrl chord">
         <span class="ctrl-label">和弦</span>
         <div class="a4-row">
           <button id="chord-toggle" class="chord-toggle" type="button">和弦</button>
-          <button id="chord-major" class="chord-major" type="button" title="按住強制大三和弦">強制大</button>
+          <span class="chord-quals">
+            <button class="qual on" type="button" data-q="diatonic">順階</button>
+            <button class="qual" type="button" data-q="maj">M</button>
+            <button class="qual" type="button" data-q="min">m</button>
+            <button class="qual" type="button" data-q="dim">dim</button>
+            <button class="qual" type="button" data-q="maj7">M7</button>
+            <button class="qual" type="button" data-q="dom7">7</button>
+            <button class="qual" type="button" data-q="min7">m7</button>
+            <button class="qual" type="button" data-q="hdim7">ø7</button>
+          </span>
+          <span id="chord-display" class="chord-display">—</span>
         </div>
       </div>
 
