@@ -224,7 +224,7 @@ html, body {
 .swatch-gray    { background: linear-gradient(135deg, #4a4a52 50%, #0e0e12 50%); }
 .swatch-pink    { background: linear-gradient(135deg, #ffffff 50%, #deb0c4 50%); }
 
-/* ===== 粉紅主題:上方介面 #FFFAFA 淺色同色系,深梅紫文字;綠色執行狀態保留以維持辨識 ===== */
+/* ===== 粉紅主題:上方介面 #FFFAFA 淺色同色系,深梅紫文字;執行中狀態用玫瑰粉(同色系) ===== */
 body.theme-pink .keyboard { background: #eadfe4; }
 body.theme-pink .ctrl { background: #fffafa; border-color: #e9d2dc; }
 body.theme-pink .ctrl-label { color: #a3798c; }
@@ -236,7 +236,7 @@ body.theme-pink .metro-toggle {
 }
 body.theme-pink .stepper:active,
 body.theme-pink .metro-toggle:active { background: #efd8e2; }
-body.theme-pink .metro-toggle.on { background: #2f6d3a; border-color: #4caf50; color: #eaffea; }
+body.theme-pink .metro-toggle.on { background: #c2537f; border-color: #a53f68; color: #fff; }
 body.theme-pink .a4-input,
 body.theme-pink .bpm-input {
   background: #ffffff;
@@ -259,7 +259,7 @@ body.theme-pink .a4-preset:active,
 body.theme-pink .qual:active,
 body.theme-pink .den-cycle:active { background: #ecd5df; }
 body.theme-pink .qual.on { background: #e9c3d3; border-color: #c26e93; color: #5c2a42; }
-body.theme-pink .chord-toggle.on { background: #2f6d3a; border-color: #4caf50; color: #eaffea; }
+body.theme-pink .chord-toggle.on { background: #c2537f; border-color: #a53f68; color: #fff; }
 body.theme-pink .tap { background: #f3e2ea; border-color: #d9b9c8; color: #7a5468; }
 body.theme-pink .tap:active { background: #e8cfdb; }
 body.theme-pink .chord-display { color: #cdb2be; }
@@ -454,11 +454,15 @@ body.theme-gray {
   --bk: #0e0e12;
   --bk-active: #3c465e;
 }
-/* 粉紅：黑鍵=莫夫粉、白鍵=白;上方介面 #FFFAFA 淺色系 */
+/* 粉紅：黑鍵=莫夫粉、白鍵=純白;上方介面 #FFFAFA 淺色系 */
 body.theme-pink {
   --bk: #deb0c4;
   --bk-active: #c996ad;
   --bk-border: #b78ba0;
+  --wk: #ffffff;              /* 純白（淺色底下 #f4f4ef 會顯灰） */
+  --wk-active: #f2d7e4;       /* 按下：淡粉,與主題一致 */
+  --wk-border: #d9c2cd;       /* 柔和梅邊,鍵間仍可辨 */
+  --wk-label: #6b4a5a;
   background: #fffafa;
   color: #4a3540;
 }
