@@ -90,3 +90,9 @@
 - **和弦辨識**:keyboard 追蹤按住音集合(`held` 計數 map + `onHeldChange` 回呼),ui `recognizeChord`:唯一 pc 依實際音高低→高當根音候選,相對半音集合比對模板(含 aug/dim7 順手支援);**依實際發聲音高**(含首調)命名。同一顯示器同時服務和弦模式與手動按音。實測 CEGB→CM7、CEG→C、轉位 EGC→C、首調+2 按 CEG→D、放開→「—」。
 - **headroom 再修**:4 音和弦峰值 0.762 略過 knee → `voiceDb -12→-13`,實測 3 音 0.571、4 音 0.680 皆 <0.7 全線性。
 - **版面**:和弦區改單行後控制列 150px、鍵盤 187px(dominant)、無 overflow。
+
+## 加入主畫面(A2HS)名稱與圖示
+- 名稱:`<title>` 與 `apple-mobile-web-app-title` 改 **Tunable Piano**;manifest `name/short_name` 同。
+- 圖示:Python 純 stdlib 產生鋼琴鍵盤 PNG(180/192/512,`icons/`);`apple-touch-icon`(iOS)+ manifest icons(Android)。
+- manifest:`start_url: "."` 相對路徑(Pages 子路徑安全)、standalone、theme #101015。產圖腳本在 session scratchpad,非 repo 資產。
+- 注意:iOS 對 A2HS 資訊有快取,已加入過主畫面的要移除重加才會換名/換圖。
