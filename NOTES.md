@@ -96,3 +96,10 @@
 - 圖示:Python 純 stdlib 產生鋼琴鍵盤 PNG(180/192/512,`icons/`);`apple-touch-icon`(iOS)+ manifest icons(Android)。
 - manifest:`start_url: "."` 相對路徑(Pages 子路徑安全)、standalone、theme #101015。產圖腳本在 session scratchpad,非 repo 資產。
 - 注意:iOS 對 A2HS 資訊有快取,已加入過主畫面的要移除重加才會換名/換圖。
+
+## 粉紅主題柔和化 + 面板同色系
+- 黑鍵 #ECB3CB(S60/L81)→ **#D4A4B8**(S≈36/L≈74,降飽和降亮度);active #bd8aa0、border #a87f92、色塊同步。
+- 粉紅主題延伸到整個面板:單一 `body.theme-pink` 覆蓋區塊(不動經典/深灰):body #251c21、panel #2f242b、stepper #3d2c36(粉邊框)、輸入框/小按鈕/tap/卷軸/拍點全套莫夫色系;accent(A4 顯示、和弦亮起、拍點 active)#e6aac6/#efb6d2。
+- 清晰度決策:**執行中綠色狀態保留**(節拍器 on、和弦 on)——功能狀態辨識優先於色系一致;白鍵維持白(規格)。
+- 注意 CSS specificity:`body.theme-pink .chord-toggle` 會蓋過 `.chord-toggle.on`,故 `.on` 狀態需在主題區塊內明確重宣告。
+- 實測:粉紅各元素計算色值正確;切回經典完全不受污染;無 console error。

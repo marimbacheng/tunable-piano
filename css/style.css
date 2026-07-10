@@ -222,7 +222,56 @@ html, body {
 .swatch.on { border-color: #4a90d9; }
 .swatch-classic { background: linear-gradient(135deg, #f4f4ef 50%, #1b1b22 50%); }
 .swatch-gray    { background: linear-gradient(135deg, #4a4a52 50%, #0e0e12 50%); }
-.swatch-pink    { background: linear-gradient(135deg, #ffffff 50%, #ecb3cb 50%); }
+.swatch-pink    { background: linear-gradient(135deg, #ffffff 50%, #d4a4b8 50%); }
+
+/* ===== 粉紅主題:上方面板同色系(深梅紫底+莫夫粉),綠色執行狀態保留以維持辨識 ===== */
+body.theme-pink .keyboard { background: #1b1318; }
+body.theme-pink .ctrl { background: #2f242b; border-color: #483843; }
+body.theme-pink .ctrl-label { color: #bb9dab; }
+body.theme-pink .stepper,
+body.theme-pink .metro-toggle {
+  background: #3d2c36;
+  border-color: #a97f96;
+  color: #f7ecf2;
+}
+body.theme-pink .stepper:active,
+body.theme-pink .metro-toggle:active { background: #4e3844; }
+body.theme-pink .metro-toggle.on { background: #2f6d3a; border-color: #4caf50; color: #eaffea; }
+body.theme-pink .a4-input,
+body.theme-pink .bpm-input {
+  background: #271d23;
+  border-color: #483843;
+  color: #f0e6ec;
+}
+body.theme-pink .a4-display { color: #e6aac6; }
+body.theme-pink .keys-display { color: #f0e6ec; }
+body.theme-pink .bpm-unit,
+body.theme-pink .ts-slash { color: #bb9dab; }
+body.theme-pink .a4-preset,
+body.theme-pink .qual,
+body.theme-pink .den-cycle,
+body.theme-pink .chord-toggle {
+  background: #2a1f26;
+  border-color: #483843;
+  color: #e3cdd8;
+}
+body.theme-pink .a4-preset:active,
+body.theme-pink .qual:active,
+body.theme-pink .den-cycle:active { background: #3d2c36; }
+body.theme-pink .qual.on { background: #5c3a4c; border-color: #d093b1; color: #fbe4ef; }
+body.theme-pink .chord-toggle.on { background: #2f6d3a; border-color: #4caf50; color: #eaffea; }
+body.theme-pink .tap { background: #3a2b34; border-color: #5b4551; color: #e3cdd8; }
+body.theme-pink .tap:active { background: #4e3844; }
+body.theme-pink .chord-display { color: #6b5560; }
+body.theme-pink .chord-display.lit { color: #efb6d2; }
+body.theme-pink .beat-dots .dot { background: #443440; }
+body.theme-pink .beat-dots .dot.active { background: #efb6d2; }
+body.theme-pink .scrollbar { background: #2f242b; border-color: #483843; }
+body.theme-pink .thumb { background: #7b5a6b; }
+body.theme-pink .thumb:active { background: #8d6a7c; }
+body.theme-pink .thumb::after { background: #ead2df; }
+body.theme-pink .swatch { border-color: #483843; }
+body.theme-pink .swatch.on { border-color: #d093b1; }
 
 /* ===== 節拍器 ===== */
 .metro-row, .metro-row2 {
@@ -405,9 +454,11 @@ body.theme-gray {
   --bk: #0e0e12;
   --bk-active: #3c465e;
 }
-/* 粉紅：黑鍵=粉紅（#ECB3CB / PANTONE 203 C）、白鍵=白 */
+/* 粉紅：黑鍵=莫夫粉（低飽和低亮度）、白鍵=白;面板同色系 */
 body.theme-pink {
-  --bk: #ecb3cb;
-  --bk-active: #d68fb0;
-  --bk-border: #c07b9b;
+  --bk: #d4a4b8;
+  --bk-active: #bd8aa0;
+  --bk-border: #a87f92;
+  background: #251c21;
+  color: #f0e6ec;
 }
