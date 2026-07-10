@@ -103,3 +103,9 @@
 - 清晰度決策:**執行中綠色狀態保留**(節拍器 on、和弦 on)——功能狀態辨識優先於色系一致;白鍵維持白(規格)。
 - 注意 CSS specificity:`body.theme-pink .chord-toggle` 會蓋過 `.chord-toggle.on`,故 `.on` 狀態需在主題區塊內明確重宣告。
 - 實測:粉紅各元素計算色值正確;切回經典完全不受污染;無 console error。
+
+## 粉紅淺色化 + 靜音出聲 + icon 內縮 + 防卡音
+- **粉紅主題二修**:黑鍵 #D4A4B8→**#DEB0C4**(亮度略升);上方介面全面淺色化 **#FFFAFA**(body/panel),深梅紫文字 #4a3540、粉調邊框/按鈕/卷軸,鍵盤底 #eadfe4;綠色執行狀態仍保留。實測色值正確、經典無污染。
+- **iOS 靜音模式出聲**:解鎖手勢內 (a) `navigator.audioSession.type='playback'`(iOS 16.4+);(b) 後備:循環播放無聲 wav `<audio>`(data URI,強制 playback session)。**實機靜音鍵行為未在此環境驗證**,留待 iPhone 確認。
+- **icon 內縮**:鍵盤區邊距 14→27(左右)、底 170→150,四角落在 iOS 圓角遮罩(r≈22%)安全區內,不再裁切。重產 180/192/512。
+- **防卡音(根因分析)**:偶發卡音來自 (a) iOS 放開事件遺失(pointerup 未達)或 (b) Tone PolySynth 同音重疊時 triggerRelease 配對失敗(已知問題)。雙層保險:①最後一指放開時 `AudioEngine.releaseAll()`(此刻不應有持續音,兜住配對失敗);②`visibilitychange(hidden)/pagehide/blur` → `releaseAllPressed()` 強制收音+清視覺+清 held(兜住事件遺失)。實測:雙指先後放開→最後一指觸發 releaseAll;down 後 blur(模擬事件遺失)→ 收音、active 清除、和弦顯示歸「—」。

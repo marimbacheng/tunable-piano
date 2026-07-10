@@ -62,6 +62,11 @@ const AudioEngine = (function () {
     synth.triggerRelease(freq);
   }
 
+  // 釋放所有聲部（防卡音保險：release 配對失敗或放開事件遺失時的兜底）
+  function releaseAll() {
+    if (synth) synth.releaseAll();
+  }
+
   // 設定 A4（415–445 鉗制、步進 1 Hz）
   function setA4(hz) {
     const v = Math.round(Number(hz));
@@ -80,7 +85,7 @@ const AudioEngine = (function () {
 
   return {
     A4_MIN, A4_MAX, TRANSPOSE_MIN, TRANSPOSE_MAX,
-    init, noteOn, noteOff, midiToFreq,
+    init, noteOn, noteOff, releaseAll, midiToFreq,
     setA4, getA4, setTranspose, getTranspose,
     softClip,
     get config() { return CONFIG; },     // 供量測重建同一條鏈

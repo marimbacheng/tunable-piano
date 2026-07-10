@@ -171,6 +171,20 @@ const Keyboard = (function () {
     rec.midis.forEach(heldRemove);
     rec.els.forEach(function (el) { el.classList.remove('active'); });
     pressed.delete(e.pointerId);
+    // 防卡音保險 1：最後一指離開時全域收音（此刻不該有任何持續聲部;
+    // 可兜住 PolySynth 同音重疊 release 配對失敗的已知問題）
+    if (pressed.size === 0) AudioEngine.releaseAll();
+  }
+
+  // 防卡音保險 2：強制釋放所有按住中的音（放開事件遺失、切離頁面時呼叫）
+  function releaseAllPressed() {
+    pressed.forEach(function (rec) {
+      rec.freqs.forEach(function (f) { AudioEngine.noteOff(f); });
+      rec.midis.forEach(heldRemove);
+      rec.els.forEach(function (el) { el.classList.remove('active'); });
+    });
+    pressed.clear();
+    AudioEngine.releaseAll();
   }
 
   // 改可視白鍵數（6–20 鉗制），保留左緣;鍵少→鍵變寬（render 內 100/count）
@@ -211,6 +225,12 @@ const Keyboard = (function () {
     // 全域收放：放開處即使在鍵外/離開視窗也能復原對應鍵
     document.addEventListener('pointerup', onRelease);
     document.addEventListener('pointercancel', onRelease);
+    // 切離頁面/失焦時強制收音（放開事件可能永遠不會來）
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) releaseAllPressed();
+    });
+    window.addEventListener('pagehide', releaseAllPressed);
+    window.addEventListener('blur', releaseAllPressed);
   }
 
   return {
