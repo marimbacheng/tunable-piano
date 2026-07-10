@@ -35,8 +35,10 @@
       UI.initKeys();
       UI.initScrollbar();
       UI.initOctave();
+      UI.initTranspose();
+      UI.initChord();
+      UI.initTheme();
       UI.initMetronome();
-      UI.initVolume();
       UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
     } catch (err) {
       unlocked = false;       // 允許再試，並讓錯誤浮現而非靜默死畫面

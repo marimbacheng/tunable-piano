@@ -83,6 +83,7 @@ html, body {
   flex-wrap: wrap;
   gap: 6px;
   align-items: flex-start;
+  flex-shrink: 0;              /* 空間不足時不得被壓縮 */
 }
 .ctrl {
   background: #22222a;
@@ -141,15 +142,60 @@ html, body {
   color: #eaeaea;
 }
 
-/* ===== 主音量 + 停止 Drone（緊湊單列） ===== */
-.vol-row { display: flex; align-items: center; gap: 6px; }
-.vol-input {
-  width: 78px;
-  height: 26px;
-  accent-color: #4a90d9;
+/* ===== A4 常見值快速選擇（小方塊） ===== */
+.a4-presets {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.a4-preset {
+  flex: 1;
+  height: 20px;
+  font-size: 0.68rem;
+  line-height: 1;
+  border: 1px solid #33333d;
+  border-radius: 5px;
+  background: #1a1a20;
+  color: #ccd;
+  cursor: pointer;
   touch-action: none;
 }
-.vol-display { min-width: 22px; text-align: right; font-size: 0.85rem; color: #8fd0ff; }
+.a4-preset:active { background: #2a2a34; }
+
+/* ===== 首調 ===== */
+.tr-display { min-width: 52px; white-space: nowrap; }
+
+/* ===== 和弦模式 ===== */
+.chord-toggle, .chord-major {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  border: 1px solid #33333d;
+  border-radius: 7px;
+  background: #1a1a20;
+  color: #ccd;
+  cursor: pointer;
+  touch-action: none;
+}
+.chord-toggle.on { background: #2f6d3a; border-color: #4caf50; color: #eaffea; }
+.chord-major.on { background: #6d5a2f; border-color: #d0a840; color: #fff3d0; }
+
+/* ===== 主題切換（小色塊） ===== */
+.theme-row { gap: 6px; }
+.swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #33333d;
+  cursor: pointer;
+  touch-action: none;
+  padding: 0;
+}
+.swatch.on { border-color: #4a90d9; }
+.swatch-classic { background: linear-gradient(135deg, #f4f4ef 50%, #1b1b22 50%); }
+.swatch-gray    { background: linear-gradient(135deg, #4a4a52 50%, #0e0e12 50%); }
+.swatch-pink    { background: linear-gradient(135deg, #ffffff 50%, #f2799f 50%); }
 
 /* ===== 節拍器 ===== */
 .metro-row, .metro-row2 {
@@ -238,6 +284,7 @@ html, body {
 .scrollbar {
   position: relative;
   height: 15px;
+  flex-shrink: 0;              /* 不得被壓縮（曾被壓到 2px 無法拖曳） */
   margin-top: 5px;
   background: #22222a;
   border: 1px solid #33333d;
@@ -255,13 +302,26 @@ html, body {
   cursor: grab;
   touch-action: none;
 }
+/* 中央小圓點：提示可滑動 */
+.thumb::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #c7d2e8;
+  pointer-events: none;
+}
 .thumb:active { cursor: grabbing; background: #5a6a86; }
 
 /* ===== 鍵盤（傳統鋼琴：白鍵滿高、黑鍵較窄疊上方；占畫面主要比例） ===== */
 .keyboard {
   position: relative;
   flex: 1 1 auto;
-  min-height: 55%;
+  min-height: 48%;
   margin-top: 6px;
   background: #0d0d10;
   border-radius: 6px;
@@ -279,26 +339,48 @@ html, body {
 }
 .key.white {
   height: 100%;
-  background: #f4f4ef;
-  border: 1px solid #8a8a8a;
+  background: var(--wk, #f4f4ef);
+  border: 1px solid var(--wk-border, #8a8a8a);
   border-radius: 0 0 5px 5px;
   z-index: 1;
   display: flex;
   align-items: flex-end;
   justify-content: center;
 }
-.key.white.active { background: #c6ccd4; }        /* 按下變深 */
+.key.white.active { background: var(--wk-active, #c6ccd4); }   /* 按下變深 */
 .key.black {
   height: 62%;
-  background: #1b1b22;
-  border: 1px solid #000;
+  background: var(--bk, #1b1b22);
+  border: 1px solid var(--bk-border, #000);
   border-radius: 0 0 4px 4px;
   z-index: 2;
+  /* 黑白鍵交界淺陰影（窄範圍），增加立體感 */
+  box-shadow:
+    3px 0 4px -2px rgba(0, 0, 0, 0.35),
+    -3px 0 4px -2px rgba(0, 0, 0, 0.35),
+    0 3px 4px -2px rgba(0, 0, 0, 0.4);
 }
-.key.black.active { background: #48506a; }        /* 按下變色（深底上以亮示按下） */
+.key.black.active { background: var(--bk-active, #48506a); }   /* 按下變色 */
 .key-label {
   font-size: clamp(9px, 1.6vw, 14px);
-  color: #333;
+  color: var(--wk-label, #333);
   padding-bottom: 8px;
   pointer-events: none;                            /* 讓 pointerdown 命中鍵本體 */
+}
+
+/* ===== 鍵盤主題 ===== */
+/* 深灰：黑鍵=黑、白鍵=深灰 */
+body.theme-gray {
+  --wk: #4a4a52;
+  --wk-active: #33333a;
+  --wk-label: #d5d5dc;
+  --wk-border: #26262c;
+  --bk: #0e0e12;
+  --bk-active: #3c465e;
+}
+/* 粉紅：黑鍵=粉紅、白鍵=白 */
+body.theme-pink {
+  --bk: #f2799f;
+  --bk-active: #d94f7d;
+  --bk-border: #b03c63;
 }

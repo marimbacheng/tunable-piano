@@ -43,6 +43,10 @@ const Keyboard = (function () {
   function render() {
     if (!container) return;
     container.innerHTML = '';
+    // 重繪前先收掉按住中的音，避免元素被移除後 release 配不到而殘響不止
+    pressed.forEach(function (rec) {
+      if (rec && rec.freqs) rec.freqs.forEach(function (f) { AudioEngine.noteOff(f); });
+    });
     pressed.clear();
 
     const whiteWidth = 100 / visibleWhiteCount;               // %
@@ -88,19 +92,51 @@ const Keyboard = (function () {
     return el;
   }
 
+  // ===== 和弦模式（順階和弦） =====
+  // 鍵盤即為首調的音階（C4 鍵＝主音 do）;白鍵 pc → 該級數的三和弦半音距。
+  // C:I 大、D:ii 小、E:iii 小、F:IV 大、G:V 大、A:vi 小、B:vii° 減。
+  const DIATONIC = { 0:[0,4,7], 2:[0,3,7], 4:[0,3,7], 5:[0,4,7], 7:[0,4,7], 9:[0,3,7], 11:[0,3,6] };
+  const MAJOR_TRIAD = [0, 4, 7];
+  let chordMode = false;
+  let forceMajor = false;   // 「強制大三和弦」鈕按住時 true（調外和弦用）
+
+  function setChordMode(on) { chordMode = !!on; return chordMode; }
+  function setForceMajor(on) { forceMajor = !!on; return forceMajor; }
+  function isChordMode() { return chordMode; }
+
+  // 依模式算出這次按下要發的 midi 組（鍵盤空間;首調位移由 AudioEngine 套用）
+  function chordMidis(midi) {
+    if (!chordMode) return [midi];
+    const intervals = forceMajor ? MAJOR_TRIAD : (DIATONIC[midi % 12] || MAJOR_TRIAD);
+    return intervals.map(function (iv) { return midi + iv; });
+  }
+
+  function keyEl(midi) {
+    return container ? container.querySelector('.key[data-midi="' + midi + '"]') : null;
+  }
+
   function onDown(e) {
     e.preventDefault();
     const el = e.currentTarget;
     const midi = Number(el.dataset.midi);
-    AudioEngine.playNote(midi);                               // 一律 pointerdown 發聲
-    el.classList.add('active');                               // 按下變色
-    pressed.set(e.pointerId, el);
+    const midis = chordMidis(midi);
+    const freqs = [], els = [];
+    midis.forEach(function (m) {
+      const f = AudioEngine.noteOn(m);       // 按住持續發聲，放開才進 release
+      if (f != null) freqs.push(f);
+      const ke = keyEl(m);                   // 視覺顯示所有觸發的音（可視範圍內）
+      if (ke) { ke.classList.add('active'); els.push(ke); }
+    });
+    pressed.set(e.pointerId, { els: els, freqs: freqs });
     try { if (e.pointerId != null) el.setPointerCapture(e.pointerId); } catch (_) {}
   }
 
   function onRelease(e) {
-    const el = pressed.get(e.pointerId);
-    if (el) { el.classList.remove('active'); pressed.delete(e.pointerId); }  // 放開即復原
+    const rec = pressed.get(e.pointerId);
+    if (!rec) return;
+    rec.freqs.forEach(function (f) { AudioEngine.noteOff(f); });   // 放開才收音
+    rec.els.forEach(function (el) { el.classList.remove('active'); });
+    pressed.delete(e.pointerId);
   }
 
   // 改可視白鍵數（6–20 鉗制），保留左緣;鍵少→鍵變寬（render 內 100/count）
@@ -146,6 +182,7 @@ const Keyboard = (function () {
   return {
     initKeyboard,
     setVisibleWhiteCount, setStartWhiteIndex, shiftOctave,
+    setChordMode, setForceMajor, isChordMode,
     MIN_WHITE, MAX_WHITE,
     get leftmostName() { return leftmostName(); },
     get totalWhites() { return whiteKeys.length; },

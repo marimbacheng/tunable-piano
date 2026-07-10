@@ -71,3 +71,15 @@
 - **移除 Drone 功能**:依需求整包移除 —— audio.js(drones map / droneOn/Off/toggle/stopAll/isDrone/droneInfo / setA4 重新調音)、keyboard.js(長按 timer / .drone 視覺)、ui.js(停止 Drone 按鈕綁定)、index.html(按鈕)、css(.drone-stop / .key.drone)。keyboard 回到單純點按發聲。
 - **八度切換**:keyboard `shiftOctave(±1)` = 移動視窗 7 個白鍵(一個八度)、鉗制不出界;`leftmostName` 顯示視窗最左白鍵科學音名。控制列新增「八度」block(◀ / 音名 / ▶),與節拍器/A4/琴鍵數**同一列**。與卷軸共享視窗狀態:`refreshWindow()` 同步卷軸拇指 + 八度顯示(八度鈕、卷軸拖曳、改鍵數皆呼叫)。八度非新存欄位(由 startWhite 導出)。
 - 實測:drone API 皆 undefined、長按不生 drone、無殘留視覺、無 console error;八度 C4→(inc,頂端鉗制)F4、(dec×2)F2,顯示與拇指同步;版面 812×375 鍵盤 53% 仍 > 控制列+卷軸加總(八度在頂列、主音量換至第 2 列)。
+
+## 大改版(9 項)
+- **主音量固定 1.0、移除拉桿**:音量交給裝置硬體鍵;`setMasterVolume` API 一併移除,localStorage 不再存 volume(舊值忽略)。
+- **長按延音**:`playNote(固定 0.1s)` 改 `noteOn(midi)→freq` / `noteOff(freq)`;pointerdown 起音、pointerup 才進 release(1.8s 尾)。release 用 noteOn 回傳的 freq 配對,A4/首調中途改不會漏收。render 前先收掉按住中的音(防重繪殘響)。實測:按住 1.2s RMS 0.146 持續、放開 2.1s 後歸零。
+- **A4 預設鍵回歸**(415/432/440/442,20px 高小方塊,視覺占比小);預設 440。
+- **卷軸絲滑 + 中央圓點**:拖曳時拇指連續跟手(不量化),索引變了才重繪鍵盤;放手才吸附。`.thumb::after` 7px 圓點提示可滑。
+- **首調(transpose)**:`AudioEngine.setTranspose(±6)`;noteOn 套 `midi+transpose`。UI「首調(C4=)」−/＋,顯示 `+2 D` / `-1 B` / `0 C`。persist。實測 +2 時 noteOn(60)=293.66Hz=D4。
+- **和弦模式(順階)**:鍵盤即首調音階(C4=do),白鍵 pc→級數三和弦:C/F/G 大 [0,4,7]、D/E/A 小 [0,3,7]、B 減 [0,3,6];黑鍵/按住「強制大」→大三和弦(調外用,放開恢復)。觸發的 3 音鍵全部 `.active` 顯示。首調位移由 noteOn 統一套用(D 大調按 C 鍵=DF#A 自動成立)。實測 C→CEG、D→DFA、A→ACE、強制 D→DF#A。
+- **破音修正**:根因=聲部過熱推進軟削波 tanh 飽和區。`voiceDb -12` 預留 headroom → 3 音和弦峰值 0.640 < knee 0.7 **全線性**;6 音極端 0.897 有界;頻率回歸 440.051 不變。音量損失由硬體音量補償。
+- **黑白鍵交界陰影**:黑鍵 box-shadow 左右/下 3px 窄範圍淺陰影。
+- **主題**:CSS 變數 + body class;「經典」「深灰(白鍵=深灰)」「粉紅(黑鍵=粉紅)」三選,小圓色塊切換,persist。
+- **版面 bug(修正)**:控制列變高後 scrollbar 被 flex 壓到 2px 無法拖曳 → `.controls`/`.scrollbar` 加 `flex-shrink:0`,鍵盤 min-height 55%→48%。修後 scrollbar 15px、無 overflow、鍵盤 50% 仍 dominant。

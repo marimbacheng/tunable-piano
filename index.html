@@ -64,6 +64,12 @@
           <button id="a4-inc" class="stepper" type="button" aria-label="A4 加 1">＋</button>
           <span class="bpm-unit">Hz</span>
         </div>
+        <div class="a4-presets">
+          <button class="a4-preset" type="button" data-hz="415">415</button>
+          <button class="a4-preset" type="button" data-hz="432">432</button>
+          <button class="a4-preset" type="button" data-hz="440">440</button>
+          <button class="a4-preset" type="button" data-hz="442">442</button>
+        </div>
       </div>
 
       <!-- 可視白鍵數 -->
@@ -86,12 +92,32 @@
         </div>
       </div>
 
-      <!-- 主音量 -->
-      <div class="ctrl vol">
-        <span class="ctrl-label">主音量</span>
-        <div class="vol-row">
-          <input id="vol-input" class="vol-input" type="range" min="0" max="100" step="1" value="60">
-          <span id="vol-display" class="vol-display">60</span>
+      <!-- 首調（C4 鍵實際發出的音） -->
+      <div class="ctrl transpose">
+        <span class="ctrl-label">首調（C4＝）</span>
+        <div class="a4-row">
+          <button id="tr-dec" class="stepper" type="button" aria-label="降半音">−</button>
+          <span id="tr-display" class="keys-display tr-display">0 C</span>
+          <button id="tr-inc" class="stepper" type="button" aria-label="升半音">＋</button>
+        </div>
+      </div>
+
+      <!-- 和弦模式 -->
+      <div class="ctrl chord">
+        <span class="ctrl-label">和弦</span>
+        <div class="a4-row">
+          <button id="chord-toggle" class="chord-toggle" type="button">和弦</button>
+          <button id="chord-major" class="chord-major" type="button" title="按住強制大三和弦">強制大</button>
+        </div>
+      </div>
+
+      <!-- 主題 -->
+      <div class="ctrl theme">
+        <span class="ctrl-label">主題</span>
+        <div class="a4-row theme-row">
+          <button class="swatch swatch-classic" type="button" data-theme="classic" aria-label="經典"></button>
+          <button class="swatch swatch-gray" type="button" data-theme="gray" aria-label="深灰"></button>
+          <button class="swatch swatch-pink" type="button" data-theme="pink" aria-label="粉紅"></button>
         </div>
       </div>
     </div>

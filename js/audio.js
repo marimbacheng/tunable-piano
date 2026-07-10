@@ -1,85 +1,91 @@
-// audio.js — M1：音訊引擎（等律音高公式、PolySynth、包絡、防爆音）
+// audio.js — 音訊引擎（等律音高公式、PolySynth、長按持續發聲、首調移調、防爆音）
 // 律制固定等律，A4 只平移基準：f = a4 × 2^((midi − 69) / 12)
 const AudioEngine = (function () {
   'use strict';
 
   const A4_MIN = 415;
   const A4_MAX = 445;
+  const TRANSPOSE_MIN = -6, TRANSPOSE_MAX = 6;   // 首調半音位移範圍（涵蓋所有調性）
 
   // 引擎參數的單一真實來源（供量測重建，確保測試與實作一致）
   const CONFIG = {
-    oscillator: { type: 'triangle' },   // 奇次泛音，音高清楚不刺耳
+    oscillator: { type: 'triangle' },
+    // 長按持續：sustain 段維持發聲，放開後 release 收尾;短點一下≈原本 ~2 秒尾音
     envelope: { attack: 0.01, decay: 0.15, sustain: 0.8, release: 1.8 },
-    masterGain: 0.6,                     // 主音量預設（M5 接 UI）
-    softKnee: 0.7,                       // 軟削波拐點：|x|≤knee 完全線性（乾淨），之上平滑飽和
-    noteDuration: 0.1                    // 點一下的觸發長度；由 release 主導 ~2s 漸弱
+    masterGain: 1.0,        // 主音量固定 100%（音量交給裝置硬體鍵）
+    voiceDb: -12,           // 每聲部預留 headroom：3 音和弦峰值 <0.7（knee）全線性 → 修破音感
+    softKnee: 0.7           // 軟削波拐點：|x|≤knee 完全線性（乾淨），之上平滑飽和（安全網）
   };
 
-  let a4 = 440;                 // 基準頻率（Hz）
-  let synth = null;            // Tone.PolySynth（點按音）
-  let masterGain = null;      // 主音量（琴鍵 + drone）
-  let shaper = null;          // 軟削波（安全級，保證輸出有界不爆音）
+  let a4 = 440;             // 基準頻率（Hz）
+  let transpose = 0;        // 首調位移（半音;+2 = 按 C4 發 D4）
+  let synth = null;         // Tone.PolySynth
+  let masterGain = null;    // 固定 1.0（保留節點供量測鏈一致）
+  let shaper = null;        // 軟削波（保證輸出有界不爆音）
 
   // 等律音高公式（僅平移基準）
   function midiToFreq(midi) {
     return a4 * Math.pow(2, (midi - 69) / 12);
   }
 
-  // 記憶體無關的軟削波：|x|≤knee 保持線性（單音乾淨），之上以 tanh 平滑飽和。
-  // WaveShaperNode 會先把輸入鉗到 [-1,1] 再查表，故輸出必然有界（|y|<1），
-  // 無論多少鍵同響都不會硬性 clipping。
+  // 記憶體無關的軟削波：|x|≤knee 線性，之上 tanh 平滑飽和;輸出必然有界（|y|<1）
   function softClip(x) {
-    const k = CONFIG.softKnee, a = Math.abs(x);
-    if (a <= k) return x;
-    const over = (a - k) / (1 - k);
+    const k = CONFIG.softKnee, aa = Math.abs(x);
+    if (aa <= k) return x;
+    const over = (aa - k) / (1 - k);
     return Math.sign(x) * (k + (1 - k) * Math.tanh(over));
   }
 
-  // 建立訊號鏈：PolySynth → Gain(主音量) → 軟削波(最後一級) → Destination
-  // 必須在 Tone.start() 之後呼叫（context 已啟動）
+  // 訊號鏈：PolySynth(-10dB) → Gain(1.0) → 軟削波 → Destination
   function init() {
-    if (synth) return;         // 冪等
+    if (synth) return;       // 冪等
     shaper = new Tone.WaveShaper(softClip, 4096).toDestination();
     masterGain = new Tone.Gain(CONFIG.masterGain).connect(shaper);
     synth = new Tone.PolySynth(Tone.Synth, {
       oscillator: CONFIG.oscillator,
       envelope: CONFIG.envelope
     }).connect(masterGain);
+    synth.volume.value = CONFIG.voiceDb;
   }
 
-  // 點一下＝固定短觸發，尾音在 ~2 秒內漸弱
-  function playNote(midi) {
-    if (!synth) return;
-    synth.triggerAttackRelease(midiToFreq(midi), CONFIG.noteDuration);
+  // 按下：開始發聲（含首調位移），持續到 noteOff;回傳實際觸發頻率供釋放配對
+  function noteOn(midi) {
+    if (!synth) return null;
+    const freq = midiToFreq(midi + transpose);
+    synth.triggerAttack(freq);
+    return freq;
   }
 
-  // 設定 A4（415–445 鉗制、步進 1 Hz）；回傳鉗制後的值。
+  // 放開：釋放對應頻率的聲部（用 noteOn 回傳的 freq,避免 A4/首調中途變動配錯）
+  function noteOff(freq) {
+    if (!synth || freq == null) return;
+    synth.triggerRelease(freq);
+  }
+
+  // 設定 A4（415–445 鉗制、步進 1 Hz）
   function setA4(hz) {
     const v = Math.round(Number(hz));
     a4 = Math.min(A4_MAX, Math.max(A4_MIN, Number.isFinite(v) ? v : a4));
     return a4;
   }
-
   function getA4() { return a4; }
 
-  // ===== 主音量（琴鍵;節拍器獨立） =====
-  function setMasterVolume(v) {
-    v = Math.min(1, Math.max(0, Number(v)));
-    if (masterGain) masterGain.gain.value = v;
-    CONFIG.masterGain = v;
-    return v;
+  // 首調位移（半音,鉗制 ±6）
+  function setTranspose(n) {
+    n = Math.round(Number(n));
+    transpose = Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Number.isFinite(n) ? n : transpose));
+    return transpose;
   }
-  function getMasterVolume() { return masterGain ? masterGain.gain.value : CONFIG.masterGain; }
+  function getTranspose() { return transpose; }
 
   return {
-    A4_MIN, A4_MAX,
-    init, playNote, midiToFreq, setA4, getA4,
-    setMasterVolume, getMasterVolume,
+    A4_MIN, A4_MAX, TRANSPOSE_MIN, TRANSPOSE_MAX,
+    init, noteOn, noteOff, midiToFreq,
+    setA4, getA4, setTranspose, getTranspose,
     softClip,
     get config() { return CONFIG; },     // 供量測重建同一條鏈
-    get output() { return shaper; }      // 供量測/除錯接分析器 + 節拍器接入軟削波
+    get output() { return shaper; }      // 供量測接分析器 + 節拍器接入軟削波
   };
 })();
 
-// 供其他 script 與除錯量測取用
 window.AudioEngine = AudioEngine;

@@ -16,7 +16,8 @@ const UI = (function () {
         const ts = Metronome.getTimeSignature();
         localStorage.setItem(STORE_KEY, JSON.stringify({
           a4: AudioEngine.getA4(),
-          volume: AudioEngine.getMasterVolume(),
+          transpose: AudioEngine.getTranspose(),
+          theme: currentTheme,
           bpm: Metronome.getBpm(),
           num: ts.numerator,
           den: ts.denominator,
@@ -37,7 +38,8 @@ const UI = (function () {
     const s = load();
     if (!s) return;
     if (s.a4 != null) AudioEngine.setA4(s.a4);
-    if (s.volume != null) AudioEngine.setMasterVolume(s.volume);
+    if (s.transpose != null) AudioEngine.setTranspose(s.transpose);
+    if (s.theme != null) applyTheme(s.theme);
     if (s.bpm != null) Metronome.setBpm(s.bpm);
     if (s.num != null && s.den != null) Metronome.setTimeSignature(s.num, s.den);
     if (s.whiteCount != null) Keyboard.setVisibleWhiteCount(s.whiteCount);
@@ -82,6 +84,14 @@ const UI = (function () {
     // 數字輸入：change 時鉗制回寫
     a4Input.addEventListener('change', function () {
       apply(a4Input.value);
+    });
+
+    // 常見值快速選擇（415/432/440/442）
+    document.querySelectorAll('.a4-preset').forEach(function (btn) {
+      btn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        apply(btn.dataset.hz);
+      });
     });
   }
 
@@ -153,14 +163,22 @@ const UI = (function () {
     });
     thumb.addEventListener('pointermove', function (e) {
       if (!dragging) return;
-      const leftPx = (e.clientX - track.getBoundingClientRect().left) - grabDX;
-      Keyboard.setStartWhiteIndex(leftPxToStart(leftPx));
-      refreshWindow();
-      persist();
+      // 絲滑拖曳：拇指連續跟手（不量化），鍵盤視窗只在索引真的變了才重繪
+      const travel = trackW() - thumbWpx();
+      const leftPx = Math.min(travel, Math.max(0, (e.clientX - track.getBoundingClientRect().left) - grabDX));
+      thumb.style.left = (leftPx / trackW() * 100) + '%';
+      const newStart = leftPxToStart(leftPx);
+      if (newStart !== Keyboard.startWhiteIndex) {
+        Keyboard.setStartWhiteIndex(newStart);
+        if (syncOctave) syncOctave();     // 只更新八度顯示，不動拇指（保持跟手）
+        persist();
+      }
     });
     const end = function (e) {
+      if (!dragging) return;
       dragging = false;
       try { if (e && e.pointerId != null) thumb.releasePointerCapture(e.pointerId); } catch (_) {}
+      sync();                              // 放手後把拇指吸附到量化位置
     };
     thumb.addEventListener('pointerup', end);
     thumb.addEventListener('pointercancel', end);
@@ -223,22 +241,63 @@ const UI = (function () {
     denBtn.addEventListener('pointerdown', e => { e.preventDefault(); Metronome.cycleDenominator(); renderTs(); persist(); });
   }
 
-  // ===== 主音量 =====
-  function initVolume() {
-    const input = document.getElementById('vol-input');
-    const display = document.getElementById('vol-display');
+  // ===== 首調（C4 鍵實際發出的音;顯示如「+2 D」） =====
+  const PC_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+  function initTranspose() {
+    const dec = document.getElementById('tr-dec');
+    const inc = document.getElementById('tr-inc');
+    const display = document.getElementById('tr-display');
     function render() {
-      const pct = Math.round(AudioEngine.getMasterVolume() * 100);
-      input.value = String(pct);
-      display.textContent = String(pct);
+      const t = AudioEngine.getTranspose();
+      const name = PC_NAMES[((60 + t) % 12 + 12) % 12];   // C4 鍵實際發出的音名
+      display.textContent = (t > 0 ? '+' : '') + t + ' ' + name;
     }
     render();
     refreshers.push(render);
-    input.addEventListener('input', function () {
-      AudioEngine.setMasterVolume(Number(input.value) / 100);
-      display.textContent = input.value;
-      persist();
+    dec.addEventListener('pointerdown', function (e) { e.preventDefault(); AudioEngine.setTranspose(AudioEngine.getTranspose() - 1); render(); persist(); });
+    inc.addEventListener('pointerdown', function (e) { e.preventDefault(); AudioEngine.setTranspose(AudioEngine.getTranspose() + 1); render(); persist(); });
+  }
+
+  // ===== 和弦模式（順階和弦;按住「強制大」出調外大三和弦） =====
+  function initChord() {
+    const toggle = document.getElementById('chord-toggle');
+    const major = document.getElementById('chord-major');
+    toggle.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      const on = Keyboard.setChordMode(!Keyboard.isChordMode());
+      toggle.classList.toggle('on', on);
     });
+    // 按住期間強制大三和弦，放開恢復順階
+    major.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.setForceMajor(true); major.classList.add('on'); });
+    const offMajor = function () { Keyboard.setForceMajor(false); major.classList.remove('on'); };
+    major.addEventListener('pointerup', offMajor);
+    major.addEventListener('pointercancel', offMajor);
+    major.addEventListener('pointerleave', offMajor);
+  }
+
+  // ===== 主題 =====
+  let currentTheme = 'classic';
+
+  function applyTheme(name) {
+    if (['classic', 'gray', 'pink'].indexOf(name) < 0) name = 'classic';
+    currentTheme = name;
+    document.body.classList.remove('theme-gray', 'theme-pink');
+    if (name !== 'classic') document.body.classList.add('theme-' + name);
+    document.querySelectorAll('.swatch').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.theme === name);
+    });
+  }
+
+  function initTheme() {
+    document.querySelectorAll('.swatch').forEach(function (btn) {
+      btn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        applyTheme(btn.dataset.theme);
+        persist();
+      });
+    });
+    applyTheme(currentTheme);
   }
 
   // ===== 八度切換（◀/▶ 移動可視視窗一個八度；與卷軸共享視窗狀態） =====
@@ -254,7 +313,7 @@ const UI = (function () {
     inc.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.shiftOctave(1); refreshWindow(); persist(); });
   }
 
-  return { initA4, initKeys, initScrollbar, initMetronome, initVolume, initOctave, loadAndApply };
+  return { initA4, initKeys, initScrollbar, initMetronome, initOctave, initTranspose, initChord, initTheme, loadAndApply };
 })();
 
 window.UI = UI;
