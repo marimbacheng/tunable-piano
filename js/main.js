@@ -24,15 +24,9 @@
       }
 
       // iOS 靜音模式也出聲：把 audio session 標為「播放」性質（iOS 16.4+）
+      // 註：不再用無聲 <audio> loop 當後備 —— 持續播放的 HTMLAudioElement 會讓 iOS
+      // 在鎖屏/控制中心顯示「Now Playing」媒體控制器（使用者不要）。靜音出聲單靠 audioSession。
       try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
-      // 後備（較舊 iOS）：手勢內循環播放無聲 <audio>，強制切到 playback session
-      try {
-        const silent = new Audio('data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA');
-        silent.loop = true;
-        window.__silentKeepAlive = silent;          // 防 GC
-        const sp = silent.play();
-        if (sp && typeof sp.catch === 'function') sp.catch(function () {});
-      } catch (_) {}
 
       AudioEngine.init();
 
