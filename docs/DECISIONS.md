@@ -56,9 +56,15 @@ commit 連結:`https://github.com/marimbacheng/tunable-piano/commit/<hash>`。
   (「按鈕閃一下沒反應」)。改同步觸發 resume(仍在手勢內)+ 立即建 UI + try/catch。
   註:preview harness 在隱藏分頁不派送座標點擊,原始失敗無法在該環境重現,修法針對最可能成因。
 
-- **iOS 靜音模式出聲:audioSession + 無聲 audio loop** — `82d9d86`
-  為何:預設 WebAudio 走 ambient session(靜音鍵會靜音)。手勢內設 `navigator.audioSession.type='playback'`
-  (iOS 16.4+);後備循環播放無聲 wav `<audio>` 強制切 playback session。**實機靜音鍵行為待 iPhone 驗證。**
+- **iOS 靜音模式出聲:僅靠 `navigator.audioSession.type='playback'`(iOS 16.4+)** — `82d9d86` → 後移除 loop `4e64759`
+  為何:預設 WebAudio 走 ambient session(靜音鍵會靜音)。手勢內設 `audioSession.type='playback'` 即無視靜音鍵。
+  **2026-07-11 實機確認:單靠 audioSession 即可靜音出聲**,原 `82d9d86` 的無聲 wav `<audio>` 後備已於 `4e64759` 移除(見下則)。
+
+- **移除無聲 `<audio>` loop 以消除鎖屏 Now Playing;保留靜音出聲、接受最小控制器** — `4e64759`
+  為何:持續播放的 `HTMLAudioElement` 會讓 iOS 顯示鎖屏/控制中心的「大圖示媒體卡片」。移除後大卡片消失。
+  但**在 iOS 上「靜音出聲」與「Now Playing 控制器」是 `playback` session 的一體兩面**:能無視靜音鍵的類別(`playback`)必被列為 Now Playing;會避開控制器的類別(`ambient`/`transient`)都會尊重靜音鍵而沒聲。
+  故無法兼得。移除 `<audio>` 已把控制器壓到「無圖示、僅顯示網址」的最小形態(2026-07-11 實機確認)。
+  **決策:優先保留靜音出聲,接受這個最小控制器。** 落選:①拿掉 `audioSession='playback'`(控制器全消但靜音下沒聲);②動態切換 session(複雜、首音易在靜音下漏聲)。
 
 - **防卡音雙層保險** — `82d9d86`
   為何:偶發卡音來自 (a) iOS 放開事件遺失、(b) PolySynth 同音重疊 release 配對失敗。
