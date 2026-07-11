@@ -10,3 +10,6 @@ dist/
 
 # Claude Code 本機設定（launch.json 保留為專案設定）
 .claude/settings.local.json
+
+# 個人工作狀態（不進 repo）
+docs/STATE.md

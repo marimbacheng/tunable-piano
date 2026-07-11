@@ -1,78 +1,49 @@
-# CLAUDE.md — 可調基準音(A4)練唱鋼琴 App
+# CLAUDE.md — Tunable Piano(輕薄索引)
 
-> 常駐規範。每輪開工先讀本檔與 NOTES.md。權威需求以 `piano-app-task-book.md` 為準;本檔是精煉版工作契約,兩者衝突時以任務書為準並更新本檔。
+> 每則訊息都會載入本檔,保持精簡。細節在 `docs/`,依需要再讀。
 
----
-
-## 專案一句話
-iPhone 橫幅網頁鋼琴,依原曲標準音(A4=440/432/…)整組平移琴鍵音高,主要輔助練唱抓音。音源為乾淨合成持續音。
+## 一句話
+iPhone 橫幅網頁鋼琴,輔助練唱抓音:可調 A4 基準、首調移調、順階/指定品質和弦、和弦辨識、節拍器、多主題。乾淨合成音。
 
 ## 技術棧(寫死)
-- Vanilla JS + Tone.js(CDN)+ 純 CSS。**不用**任何前端框架、**無** build step。
-- 目標平台:iOS Safari 15+(主)、桌機 Chrome/Safari(開發)。RWD。
-- 部署:GitHub Pages(靜態、HTTPS)。
+- Vanilla JS + Tone.js(CDN,v14.8.49)+ 純 CSS。**無框架、無 build step**。
+- 目標:iOS Safari 15+(主)、桌機 Chrome/Safari(開發)。RWD、橫幅。
+- 部署:GitHub Pages(靜態、HTTPS)。線上:https://marimbacheng.github.io/tunable-piano/
 
----
-
-## 硬性限制(不要另尋做法)
-1. **AudioContext 必須手勢啟動**:開場「點擊開始」解鎖畫面,在 `pointerdown`/`click` 內呼叫 `Tone.start()`;解鎖前不發聲。
-2. **等律音高公式,只平移基準**:`f = A4ref × 2^((midi − 69) / 12)`。律制固定等律,改 A4 只換 `A4ref` 乘數,整組鍵一起平移。
-3. **A4 設定**:數字輸入 + 加減,步進 1 Hz,範圍 415–445(超界鉗制),改動即時套用不重載。
-4. **發聲綁 `pointerdown`**(非 `click`,避免延遲),同時相容滑鼠。全域 `touch-action: none`、`user-select: none`。
-5. **節拍器排程用 `Tone.Transport` / audio clock**,**禁止**用 `setInterval` 直接發聲(`setInterval` 僅可做前瞻排程迴圈)。BPM 20–400。
-6. **不鎖橫向**:偵測直向 → 蓋全螢幕「請將手機橫放」提示;橫向自動移除。
-7. **safe-area**:用 `env(safe-area-inset-*)`。
-8. **資產一律相對路徑**(`css/style.css`、`js/main.js`),**禁用**絕對路徑(`/css/...`),避免 Pages 子路徑 404。
-9. **音源**:`Tone.PolySynth`(多鍵同響);點按 `triggerAttackRelease`,尾音 ~2 秒內歸零;放開只恢復顏色,與衰減無關。
-10. **Drone** 用獨立於一般按鍵的機制(持續 attack、不套 2 秒 release),可解除。
-
-## 音高驗算基準(除錯時對照,不憑聽感)
-| midi | 音名 | A4=440 | A4=432 |
-|------|------|--------|--------|
-| 69   | A4   | 440.00 | 432.00 |
-| 60   | C4   | 261.63 | 256.87 |
-誤差門檻:< 0.5 Hz。
-
-## 鍵盤規格
-- 音域 A1(33)–C6(84),共 52 鍵(白鍵 31)。先建完整資料模型,只渲染可視視窗。
-- **傳統鋼琴外觀**:白鍵滿高並排、黑鍵較窄(白鍵寬×0.62)疊於白鍵交界上方。
-- 可視鍵數 = **白鍵數**:預設 12,最小 6,最大 20(+/− 增減、超界鉗制)。鍵少→鍵變寬,單白鍵寬 = 容器寬 / 白鍵數。
-- 上方卷軸移動可視視窗,不出音域邊界。
-- 白鍵標科學音名(含八度,如 C4/A4),中央 C=C4=MIDI 60,A4=MIDI 69;黑鍵不標。
-
-## 狀態保存
-localStorage:A4、BPM、拍號、可視鍵數、視窗位置、主音量。重開沿用。
-
----
-
-## 工作協定(第 7 節)
-- **計畫先行**:動工前先在該 Milestone 提出實作計畫與檔案異動範圍,確認後才寫。
-- **里程碑閘門**:一次只完成一個 Milestone,附驗收自測結果;未過不進下一關。M0→M6,M6 選做。
-- **除錯協定**:發聲/音高問題先以**頻率量測**驗證(對照上表),不憑聽感臆測。同一 bug 修兩次失敗,第三次前先寫根因分析。
-- **Git 紀律**:每個 Milestone 一個乾淨 commit(或 PR),訊息標明 M 編號與驗收狀態。
-- **誠實驗收**:每個宣稱都要有本輪工具輸出為證;未驗證明說「未驗證」;測試失敗照實貼。
-
-## 里程碑閘門狀態
-- [x] **M0** — 骨架 / 解鎖 / 橫向偵測(瀏覽器實測通過)
-- [x] **M1** — 音訊引擎 + A4 可調(頻率量測驗收通過,誤差≤0.094Hz)
-- [x] **M2** — 鍵盤渲染 + 音名(傳統鋼琴外觀,實測通過)
-- [x] **M3** — 鍵數增減 + 卷軸(實測通過)
-- [x] **M4** — 節拍器(Tone.Transport,實測通過;BPM120=0.5s/0jitter)
-- [x] **M5** — 音量 + Drone + 狀態保存(實測通過)
-- [ ] **M6**(選做)— PWA / 離線 / 單檔打包 + 實機微調
-
-## 檔案結構
+## 目錄結構
 ```
-/
-├── index.html          # 結構、解鎖畫面、橫向提示層、CDN 載入 Tone.js
-├── css/style.css       # RWD、safe-area、鍵盤/控制列樣式、按下態
-└── js/
-    ├── audio.js        # 音高公式、PolySynth、triggerAttackRelease、drone、主音量
-    ├── keyboard.js     # A1–C6 資料模型、可視視窗、鍵寬、渲染、點按變色
-    ├── metronome.js    # Tone.Transport、BPM、拍號、tap 取速
-    ├── ui.js           # A4/BPM/鍵數 控制列、卷軸、localStorage
-    └── main.js         # 手勢解鎖、橫向偵測、模組組裝與事件綁定
+index.html          結構、解鎖層、橫向提示、A2HS meta、CDN 載入 Tone.js
+manifest.json       PWA(加入主畫面 名稱=Tunable Piano)
+icons/              程式產生的鋼琴 App 圖示(180/192/512)
+css/style.css       全部樣式(含主題 CSS 變數)
+js/audio.js         音高公式、PolySynth、noteOn/off、首調、防爆音軟削波
+js/keyboard.js      A1–C6 資料模型、可視視窗、渲染、和弦模式、按住音追蹤
+js/metronome.js     Tone.Transport 排程、BPM、拍號、tap
+js/ui.js            全部控制列 UI + localStorage + 和弦辨識
+js/main.js          手勢解鎖、橫向偵測、模組組裝
+piano-app-task-book.md   原始需求(歷史參考;實作已大幅超出)
 ```
 
-## 本次不做(留位)
-延音/按住模式、節拍器重音、非等律律制、取樣鋼琴音色。
+## 關鍵慣例(改動勿破壞)
+- **等律音高**:`f = A4ref × 2^((midi−69)/12)`;改 A4/首調只平移,律制固定等律。
+- **首調**:位移統一在 `AudioEngine.noteOn(midi)` 內套 `+transpose`,鍵盤/和弦都自動移調。
+- **發聲綁 `pointerdown`**(非 click);`noteOn` 起音、`noteOff`/放開才 release(長按延音)。全域 `touch-action:none`。
+- **解鎖同步執行**:手勢內觸發 `Tone.start()` 但**不 await**,立即建 UI + try/catch(避免卡解鎖畫面)。
+- **防爆音**:全鏈末端 `WaveShaper` 軟削波;每聲部 `-13dB` headroom,和弦峰值 <knee(0.7)全線性。
+- **防卡音**:最後一指放開 → `releaseAll()`;`visibilitychange/pagehide/blur` → 強制收音。
+- **資產一律相對路徑**(`css/…`、`js/…`、`icons/…`),禁絕對路徑(Pages 子路徑會 404)。
+- **主題**:CSS 變數 + `body.theme-*` class;白鍵維持白、執行中狀態各主題自訂色。
+- localStorage key `tunable-piano-v1`;存 a4/transpose/theme/bpm/拍號/鍵數/視窗位置。
+
+## 常用指令
+```
+python3 -m http.server 8000        # 本機起站(專案根目錄)
+git push origin main               # 推送 → 自動觸發 Pages 重建
+gh api /repos/marimbacheng/tunable-piano/pages/builds/latest --jq .status   # 查建置
+```
+
+## 延伸文件清單(何時讀哪份)
+- **改架構 / 加模組 / 看資料流** → `docs/ARCHITECTURE.md`
+- **想知道某設計為何這樣做、別重蹈落選方案** → `docs/DECISIONS.md`
+- **部署、rollback、上線注意、iOS 實機事項** → `docs/DEPLOYMENT.md`
+- **接手時看「做到哪、已知問題、待辦」** → `docs/STATE.md`(不在 repo,本機檔)
