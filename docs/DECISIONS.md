@@ -67,6 +67,13 @@ commit 連結:`https://github.com/marimbacheng/tunable-piano/commit/<hash>`。
 
 ## 版面 / 主題
 
+- **鍵盤延伸到畫面最底:`.app` `padding-bottom:0`(移除底部 safe-area 留白)** — `961a903`
+  為何:鍵盤本以 `flex:1 1 auto` 撐滿,但 `.app` 底部 `calc(env(safe-area-inset-bottom)+6px)`
+  在 iPhone 橫幅實機因 home indicator 撐出 ~27px 深色留白。改 `padding-bottom:0` 讓白鍵貼齊底邊。
+  上/左/右 safe-area 保留避瀏海;home indicator 為半透明覆蓋層,只攔上滑手勢不影響點按。
+  白鍵略高(比例 3.16→3.58,真鋼琴鍵本就高),不破壞比例,故不採「整體置中」方案。
+  落選:保留底部 safe-area(留白仍在)、整體垂直置中(flex 已填滿,無多餘空間可分配,無效)。
+
 - **鍵盤占畫面主體:`min-height` 保底 + 控制列 `flex-shrink:0`** — `75225af`、`82d9d86`
   為何:使用者要琴鍵為主。控制列變高時曾把卷軸 flex 壓到 2px 不能拖 → 加 `flex-shrink:0`,
   鍵盤 `min-height:48%`。實測寬屏鍵盤 ~53–67% 皆 > 其它區加總。
