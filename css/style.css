@@ -70,10 +70,12 @@ html, body {
   inset: 0;
   display: flex;
   flex-direction: column;
+  /* 底部不留白：鍵盤延伸到畫面最底邊（橫幅 home indicator 為半透明覆蓋層，
+     不影響點按；上/左/右仍保留 safe-area 避開瀏海） */
   padding:
     calc(env(safe-area-inset-top) + 6px)
     calc(env(safe-area-inset-right) + 6px)
-    calc(env(safe-area-inset-bottom) + 6px)
+    0
     calc(env(safe-area-inset-left) + 6px);
 }
 
