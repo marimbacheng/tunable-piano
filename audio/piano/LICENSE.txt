@@ -1,0 +1,6 @@
+Salamander Grand Piano V3 (Yamaha C5 取樣)
+by Alexander Holm — Creative Commons Attribution 3.0 (CC BY 3.0)
+https://creativecommons.org/licenses/by/3.0/
+
+取樣子集(每小三度一檔,C1–A6 共 24 檔,mp3 轉碼版)取自
+Tone.js 官方示例音源鏡像 https://tonejs.github.io/audio/salamander/

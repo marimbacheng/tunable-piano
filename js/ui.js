@@ -24,7 +24,8 @@ const UI = (function () {
           whiteCount: Keyboard.visibleWhiteCount,
           startWhite: Keyboard.startWhiteIndex,
           slide: Keyboard.isSlideMode(),
-          custom: customColors
+          custom: customColors,
+          timbre: AudioEngine.getTimbre()
         }));
       } catch (_) {}
     }, 150);
@@ -50,6 +51,7 @@ const UI = (function () {
     if (s.whiteCount != null) Keyboard.setVisibleWhiteCount(s.whiteCount);
     if (s.startWhite != null) Keyboard.setStartWhiteIndex(s.startWhite);
     if (s.slide != null) Keyboard.setSlideMode(!!s.slide);
+    if (s.timbre != null) AudioEngine.setTimbre(s.timbre);   // 鋼琴載入前先以合成音發聲
     refreshAll();
   }
 
@@ -306,8 +308,8 @@ const UI = (function () {
       const on = Keyboard.setChordMode(!Keyboard.isChordMode());
       toggle.classList.toggle('on', on);
     });
-    // 品質選擇：順階 or 指定品質（單選）
-    const quals = document.querySelectorAll('.qual');
+    // 品質選擇：順階 or 指定品質（單選）;限定和弦列（音色鈕也用 .qual 樣式,勿誤綁）
+    const quals = document.querySelectorAll('.chord-quals .qual');
     quals.forEach(function (btn) {
       btn.addEventListener('pointerdown', function (e) {
         e.preventDefault();
@@ -442,6 +444,43 @@ const UI = (function () {
     inc.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.shiftOctave(1); refreshWindow(); persist(); });
   }
 
+  // ===== 音色（合成音/鋼琴）=====
+  // 合成音即開即用;鋼琴取樣解鎖後背景載入,鈕上顯示進度,載完可切。
+  // 未就緒先選鋼琴也可以:先發合成音,載完自動改用鋼琴（AudioEngine.instrument 判斷）。
+  function initTimbre() {
+    const bSynth = document.getElementById('timbre-synth');
+    const bPiano = document.getElementById('timbre-piano');
+    function render() {
+      const t = AudioEngine.getTimbre();
+      bSynth.classList.toggle('on', t === 'synth');
+      bPiano.classList.toggle('on', t === 'piano');
+      const st = AudioEngine.pianoStatus;
+      if (st === 'ready') bPiano.textContent = '鋼琴';
+      else if (st === 'error') bPiano.textContent = '鋼琴 ✕';
+      else if (st === 'idle') bPiano.textContent = '鋼琴';
+    }
+    AudioEngine.onPianoStatus = function (st, prog) {
+      if (st === 'loading') bPiano.textContent = '鋼琴 ' + Math.round(prog * 100) + '%';
+      else render();
+    };
+    bSynth.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      AudioEngine.setTimbre('synth');
+      render();
+      persist();
+    });
+    bPiano.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      AudioEngine.setTimbre('piano');
+      if (AudioEngine.pianoStatus === 'error') AudioEngine.loadPiano();   // 失敗後點擊重試
+      render();
+      persist();
+    });
+    render();
+    refreshers.push(render);
+    AudioEngine.loadPiano();    // 背景載入（不阻塞開場;瀏覽器快取後續免下載）
+  }
+
   // ===== 滑動換音域（按住琴鍵水平拖曳平移可視視窗;預設關） =====
   function initSlide() {
     const btn = document.getElementById('slide-toggle');
@@ -458,7 +497,7 @@ const UI = (function () {
     Keyboard.onWindowChange = function () { refreshWindow(); persist(); };
   }
 
-  return { initA4, initKeys, initScrollbar, initMetronome, initOctave, initTranspose, initChord, initTheme, initSlide, loadAndApply };
+  return { initA4, initKeys, initScrollbar, initMetronome, initOctave, initTranspose, initChord, initTheme, initSlide, initTimbre, loadAndApply };
 })();
 
 window.UI = UI;

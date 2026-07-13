@@ -17,7 +17,11 @@ const AudioEngine = (function () {
     softKnee: 0.7,          // 軟削波拐點：|x|≤knee 完全線性（乾淨），之上平滑飽和（安全網）
     // 靜音看門狗：最後一音釋放 2.5s 後（release 1.8s 尾音已結束 + 餘裕）重建 synth。
     // 兜住 Tone.PolySynth 聲部追蹤遺失（同音快速重觸發）造成 releaseAll 也收不掉的卡長音。
-    silenceRebuildMs: 2500
+    silenceRebuildMs: 2500,
+    // 鋼琴取樣：release=放開後的收音淡出;samplerDb 經離線量測定案:
+    // 4 音和弦峰值 -10dB→0.258 / -8→0.325 / -6→0.409 皆 <0.7 knee 全線性,取 -6(音量貼近合成音)
+    samplerRelease: 1.2,
+    samplerDb: -6
   };
 
   let a4 = 440;             // 基準頻率（Hz）
@@ -25,8 +29,23 @@ const AudioEngine = (function () {
   let synth = null;         // Tone.PolySynth
   let masterGain = null;    // 固定 1.0（保留節點供量測鏈一致）
   let shaper = null;        // 軟削波（保證輸出有界不爆音）
-  const active = new Map(); // freq → 按住計數：同頻率只 attack 一次（防重疊聲部觸發卡音）
+  const active = new Map(); // freq → {count,inst}：同頻率只 attack 一次,release 回到原樂器
   let watchdogTimer = null; // 靜音看門狗計時器
+
+  // ===== 音色：合成音（預設,即開即用）/ 鋼琴取樣（背景載入,載完可切） =====
+  // Salamander Grand Piano(CC BY 3.0)子集:每小三度一檔 C1–A6 共 24 檔,自帶於 audio/piano/。
+  // 檔名 s=升記號(Ds1=D#1)。AudioBuffer 與 context 無關,快取後重建 context/看門狗可復用不重載。
+  const PIANO_BASE = 'audio/piano/';   // 相對路徑（Pages 子路徑相容）
+  const PIANO_NOTES = [
+    'C1','Ds1','Fs1','A1','C2','Ds2','Fs2','A2','C3','Ds3','Fs3','A3',
+    'C4','Ds4','Fs4','A4','C5','Ds5','Fs5','A5','C6','Ds6','Fs6','A6'
+  ];
+  let timbre = 'synth';         // 'synth' | 'piano'（piano 需樣本就緒才實際發聲,否則先用合成音）
+  let sampler = null;           // Tone.Sampler
+  let pianoBuffers = null;      // 音名 → AudioBuffer（解碼快取）
+  let pianoStatus = 'idle';     // idle | loading | ready | error
+  let pianoLoadPromise = null;
+  let onPianoStatus = null;     // cb(status, progress 0–1)：UI 顯示載入進度
 
   // 等律音高公式（僅平移基準）
   function midiToFreq(midi) {
@@ -51,13 +70,82 @@ const AudioEngine = (function () {
     return s;
   }
 
-  // 訊號鏈：PolySynth(-13dB) → Gain(1.0) → 軟削波 → Destination
+  // 訊號鏈：PolySynth/Sampler(各自 headroom) → Gain(1.0) → 軟削波 → Destination
   function init() {
     if (synth) return;       // 冪等
     shaper = new Tone.WaveShaper(softClip, 4096).toDestination();
     masterGain = new Tone.Gain(CONFIG.masterGain).connect(shaper);
     synth = buildSynth();
   }
+
+  // ===== 鋼琴取樣載入 / Sampler 建構 =====
+  function notifyPiano(progress) {
+    if (onPianoStatus) { try { onPianoStatus(pianoStatus, progress); } catch (_) {} }
+  }
+
+  // 單檔抓取+解碼（失敗重試一次後拋出）
+  function fetchSample(note, attempt) {
+    return fetch(PIANO_BASE + note + '.mp3')
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + note);
+        return r.arrayBuffer();
+      })
+      .then(function (ab) { return Tone.getContext().rawContext.decodeAudioData(ab); })
+      .catch(function (err) {
+        if (attempt < 1) return fetchSample(note, attempt + 1);
+        throw err;
+      });
+  }
+
+  // 背景載入全部樣本（冪等）;完成後建 Sampler、通知 UI
+  function loadPiano() {
+    if (pianoLoadPromise) return pianoLoadPromise;
+    pianoStatus = 'loading';
+    notifyPiano(0);
+    let done = 0;
+    pianoLoadPromise = Promise.all(PIANO_NOTES.map(function (n) {
+      return fetchSample(n, 0).then(function (buf) {
+        done++;
+        notifyPiano(done / PIANO_NOTES.length);
+        return [n.replace('s', '#'), buf];       // Ds1 → D#1（Tone 音名）
+      });
+    })).then(function (pairs) {
+      pianoBuffers = {};
+      pairs.forEach(function (p) { pianoBuffers[p[0]] = p[1]; });
+      buildSampler();
+      pianoStatus = 'ready';
+      notifyPiano(1);
+      return true;
+    }).catch(function (err) {
+      console.error('[piano] 取樣載入失敗:', err);
+      pianoStatus = 'error';
+      pianoLoadPromise = null;    // 允許再試（優雅退回合成音,不 crash）
+      notifyPiano(0);
+      return false;
+    });
+    return pianoLoadPromise;
+  }
+
+  // 由快取 AudioBuffer 建 Sampler（init 後、看門狗與 context 重建皆可重呼）
+  function buildSampler() {
+    if (!pianoBuffers || !masterGain) return;
+    try { if (sampler) sampler.dispose(); } catch (_) {}
+    const urls = {};
+    for (const k in pianoBuffers) urls[k] = new Tone.ToneAudioBuffer(pianoBuffers[k]);
+    sampler = new Tone.Sampler({ urls: urls, release: CONFIG.samplerRelease }).connect(masterGain);
+    sampler.volume.value = CONFIG.samplerDb;
+  }
+
+  // 目前實際發聲的樂器：piano 已就緒才用 Sampler,否則退回合成音（即開即用）
+  function instrument() {
+    return (timbre === 'piano' && sampler && pianoStatus === 'ready') ? sampler : synth;
+  }
+
+  function setTimbre(t) {
+    timbre = (t === 'piano') ? 'piano' : 'synth';
+    return timbre;
+  }
+  function getTimbre() { return timbre; }
 
   // ===== 切回 app 恢復音訊（分段恢復） =====
   // iOS 切離 app 後 context 進 WebKit 特有的 'interrupted'。移除無聲 <audio> loop 後
@@ -81,12 +169,14 @@ const AudioEngine = (function () {
   function rebuildContext() {
     try {
       const old = Tone.getContext();
-      const oldSynth = synth, oldGain = masterGain, oldShaper = shaper;
+      const oldSynth = synth, oldGain = masterGain, oldShaper = shaper, oldSampler = sampler;
       Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }));
-      synth = null; masterGain = null; shaper = null;
+      synth = null; masterGain = null; shaper = null; sampler = null;
       active.clear(); cancelWatchdog();
       init();
+      if (pianoBuffers) buildSampler();   // AudioBuffer 與 context 無關,免重新下載/解碼
       try { if (onRebuild) onRebuild(); } catch (_) {}
+      try { if (oldSampler) oldSampler.dispose(); } catch (_) {}
       try { if (oldSynth) oldSynth.dispose(); } catch (_) {}
       try { if (oldGain) oldGain.dispose(); } catch (_) {}
       try { if (oldShaper) oldShaper.dispose(); } catch (_) {}
@@ -156,6 +246,8 @@ const AudioEngine = (function () {
         synth = buildSynth();
         old.disconnect();
         old.dispose();
+        // Sampler 無 PolySynth 的聲部追蹤 bug,不重建;補一次 releaseAll 兜底即可
+        if (sampler) sampler.releaseAll();
       } catch (_) {}
     }, CONFIG.silenceRebuildMs);
   }
@@ -168,22 +260,27 @@ const AudioEngine = (function () {
     ensureRunning(true);      // 手勢內兜底恢復：interrupted 直接重建,第一次按鍵即恢復音訊
     cancelWatchdog();
     const freq = midiToFreq(midi + transpose);
-    const n = active.get(freq) || 0;
-    if (n === 0) synth.triggerAttack(freq);
-    active.set(freq, n + 1);
+    const rec = active.get(freq);
+    if (rec) {
+      rec.count++;
+    } else {
+      const inst = instrument();
+      inst.triggerAttack(freq);
+      active.set(freq, { count: 1, inst: inst });   // 記住發聲樂器:中途切音色仍能正確收音
+    }
     return freq;
   }
 
   // 放開：計數歸零才真正釋放（用 noteOn 回傳的 freq,避免 A4/首調中途變動配錯）
   function noteOff(freq) {
-    if (!synth || freq == null) return;
-    const n = active.get(freq);
-    if (n == null) return;    // releaseAll 已清過 → 忽略,避免誤釋放同頻新音
-    if (n <= 1) {
+    if (freq == null) return;
+    const rec = active.get(freq);
+    if (!rec) return;         // releaseAll 已清過 → 忽略,避免誤釋放同頻新音
+    if (rec.count <= 1) {
       active.delete(freq);
-      synth.triggerRelease(freq);
+      try { rec.inst.triggerRelease(freq); } catch (_) {}
     } else {
-      active.set(freq, n - 1);
+      rec.count--;
     }
     if (active.size === 0) scheduleWatchdog();
   }
@@ -192,6 +289,7 @@ const AudioEngine = (function () {
   function releaseAll() {
     active.clear();
     if (synth) synth.releaseAll();
+    if (sampler) { try { sampler.releaseAll(); } catch (_) {} }
     scheduleWatchdog();
   }
 
@@ -215,13 +313,18 @@ const AudioEngine = (function () {
     A4_MIN, A4_MAX, TRANSPOSE_MIN, TRANSPOSE_MAX,
     init, noteOn, noteOff, releaseAll, ensureRunning, midiToFreq,
     setA4, getA4, setTranspose, getTranspose,
+    setTimbre, getTimbre, loadPiano,
+    set onPianoStatus(cb) { onPianoStatus = cb; },
+    get pianoStatus() { return pianoStatus; },
     softClip,
     get config() { return CONFIG; },     // 供量測重建同一條鏈
     get output() { return shaper; },     // 供量測接分析器 + 節拍器接入軟削波
     set onContextRebuild(cb) { onRebuild = cb; },   // context 重建後通知（節拍器重建）
     // 測試探針（同 Metronome._onClick 慣例）：驗證引用計數、看門狗與 context 重建
     get _synth() { return synth; },
+    get _sampler() { return sampler; },
     get _activeSize() { return active.size; },
+    get _pianoBuffers() { return pianoBuffers; },
     _rebuildContext: rebuildContext
   };
 })();

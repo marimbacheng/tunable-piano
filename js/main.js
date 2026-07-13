@@ -44,6 +44,7 @@
       UI.initChord();
       UI.initTheme();
       UI.initSlide();
+      UI.initTimbre();
       UI.initMetronome();
       UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
 
