@@ -1,5 +1,7 @@
 // metronome.js — M4：節拍器（Tone.Transport 排程，非 setInterval 發聲）
 // 節拍音與琴鍵音源分離;目前無重音（每拍同音量）。
+// 注意：一律用 Tone.getTransport()/getDraw()（即時）;Tone.Transport/Tone.Draw 是
+// 模組匯出的過期綁定，AudioEngine 重建 context 後仍指向舊 context 的實例（會 crash）。
 const Metronome = (function () {
   'use strict';
 
@@ -32,14 +34,14 @@ const Metronome = (function () {
       click.connect(AudioEngine.output);
       click.volume.value = -6;
     }
-    Tone.Transport.bpm.value = bpm;
-    Tone.Transport.timeSignature = [numerator, denominator];
+    Tone.getTransport().bpm.value = bpm;
+    Tone.getTransport().timeSignature = [numerator, denominator];
     if (!loop) {
       loop = new Tone.Loop(function (time) {
         click.triggerAttackRelease(CLICK_FREQ, CLICK_DUR, time);   // 在精確 audio 時間發聲
         var idx = beatIndex, total = numerator;
         if (onClickProbe) onClickProbe(time, idx, total);
-        Tone.Draw.schedule(function () { if (onBeatCb) onBeatCb(idx, total); }, time);  // 視覺對齊 audio clock
+        Tone.getDraw().schedule(function () { if (onBeatCb) onBeatCb(idx, total); }, time);  // 視覺對齊 audio clock
         beatIndex = (beatIndex + 1) % numerator;
       }, beatNote());
       loop.start(0);
@@ -50,14 +52,14 @@ const Metronome = (function () {
     if (running) return;
     running = true;
     beatIndex = 0;
-    Tone.Transport.position = 0;
-    Tone.Transport.start();
+    Tone.getTransport().position = 0;
+    Tone.getTransport().start();
   }
 
   function stop() {
     if (!running) return;
     running = false;
-    Tone.Transport.stop();
+    Tone.getTransport().stop();
     beatIndex = 0;
     if (onBeatCb) onBeatCb(-1, numerator);   // 清除亮點
   }
@@ -67,14 +69,14 @@ const Metronome = (function () {
   function setBpm(v) {
     v = Math.round(Number(v));
     bpm = Math.min(BPM_MAX, Math.max(BPM_MIN, Number.isFinite(v) ? v : bpm));
-    Tone.Transport.bpm.value = bpm;
+    Tone.getTransport().bpm.value = bpm;
     return bpm;
   }
   function getBpm() { return bpm; }
 
   function applyTimeSignature() {
     if (loop) loop.interval = beatNote();
-    Tone.Transport.timeSignature = [numerator, denominator];
+    Tone.getTransport().timeSignature = [numerator, denominator];
     beatIndex = 0;
   }
 
@@ -108,9 +110,21 @@ const Metronome = (function () {
 
   function isRunning() { return running; }
 
+  // 音訊 context 重建後重生：舊 click/loop 綁在已關閉的 context 上，須丟棄後
+  // 以現存 bpm/拍號/回呼重建於新 context;若原本在跑則接續跑。
+  function rebuild() {
+    const wasRunning = running;
+    running = false;
+    try { if (loop) loop.dispose(); } catch (_) {}
+    try { if (click) click.dispose(); } catch (_) {}
+    loop = null; click = null; beatIndex = 0;
+    init(onBeatCb);
+    if (wasRunning) start();
+  }
+
   return {
     BPM_MIN: BPM_MIN, BPM_MAX: BPM_MAX, NUM_MIN: NUM_MIN, NUM_MAX: NUM_MAX, DENOMS: DENOMS,
-    init: init, start: start, stop: stop, toggle: toggle, isRunning: isRunning,
+    init: init, rebuild: rebuild, start: start, stop: stop, toggle: toggle, isRunning: isRunning,
     setBpm: setBpm, getBpm: getBpm,
     setTimeSignature: setTimeSignature, getTimeSignature: getTimeSignature, cycleDenominator: cycleDenominator,
     tap: tap,

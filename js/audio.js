@@ -59,15 +59,85 @@ const AudioEngine = (function () {
     synth = buildSynth();
   }
 
-  // 恢復 AudioContext：iOS 切離 app/鎖屏後 context 停在 suspended/interrupted，
-  // 回到 app 不會自動恢復 → 頁面可見/手勢時呼叫（手勢內 resume 最可靠）
-  function ensureRunning() {
+  // ===== 切回 app 恢復音訊（分段恢復） =====
+  // iOS 切離 app 後 context 進 WebKit 特有的 'interrupted'。移除無聲 <audio> loop 後
+  // 已無媒體元素替我們重新激活系統音訊 session，resume() 可能靜默無效（實機證實）。
+  // 對策：手勢內遇 interrupted 直接重建 context（手勢內新建的 context 必為 running，
+  // 等於重新激活 session，亦治 resume 後假 running 的殭屍 context）;
+  // 非手勢路徑先試原生 resume，連兩次救不回也重建。
+  let recoverTimer = null;
+  let resumeAttempts = 0;      // 非手勢 resume 重試計數（有界）
+  let gestureAttempts = 0;     // 手勢內 resume 未果次數（第 2 次手勢起直接重建）
+  let onRebuild = null;        // context 重建後通知（main.js 掛節拍器重建）
+
+  // 一律用 Tone.getContext()（即時）;Tone.context 為模組匯出的過期綁定，
+  // setContext() 換新後仍回傳舊物件（實測 closed），誤用會造成無限重建。
+  function nativeCtx() {
+    try { const raw = Tone.getContext().rawContext; return raw._nativeAudioContext || raw; }
+    catch (_) { return null; }
+  }
+
+  // 整組重建：新 Tone.Context → 重建本引擎鏈 → 通知節拍器重建 → 關舊 context
+  function rebuildContext() {
     try {
-      if (Tone.context.state !== 'running') {
-        const p = Tone.context.resume();
-        if (p && typeof p.catch === 'function') p.catch(function () {});
+      const old = Tone.getContext();
+      const oldSynth = synth, oldGain = masterGain, oldShaper = shaper;
+      Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }));
+      synth = null; masterGain = null; shaper = null;
+      active.clear(); cancelWatchdog();
+      init();
+      try { if (onRebuild) onRebuild(); } catch (_) {}
+      try { if (oldSynth) oldSynth.dispose(); } catch (_) {}
+      try { if (oldGain) oldGain.dispose(); } catch (_) {}
+      try { if (oldShaper) oldShaper.dispose(); } catch (_) {}
+      try { const p = old.close(); if (p && typeof p.catch === 'function') p.catch(function () {}); } catch (_) {}
+      return true;
+    } catch (_) { return false; }
+  }
+
+  function ensureRunning(fromGesture) {
+    // 重申 playback session（iOS 中斷後可能失效;維持靜音鍵也出聲）
+    try {
+      if (navigator.audioSession && navigator.audioSession.type !== 'playback') {
+        navigator.audioSession.type = 'playback';
       }
     } catch (_) {}
+    try {
+      const st = Tone.getContext().state;
+      if (st === 'running') { resumeAttempts = 0; gestureAttempts = 0; return; }
+      if (fromGesture === true) {
+        // 重建只在手勢內做：非手勢時機建的新 context 是 suspended（仍需手勢才跑），
+        // 非手勢重建無益且有連環重建風險（實測驗證）。
+        // interrupted → 立即重建;suspended → 先 resume,連兩次手勢仍未恢復也重建。
+        if (st === 'interrupted' || gestureAttempts >= 1) {
+          gestureAttempts = 0;
+          rebuildContext();
+          return;
+        }
+        gestureAttempts++;
+      }
+      nativeResume();
+      scheduleRecoverCheck();
+    } catch (_) {}
+  }
+
+  function nativeResume() {
+    const ctx = nativeCtx();     // 直接對最底層原生 context resume（繞開包裝層狀態機）
+    if (ctx) {
+      const p = ctx.resume();
+      if (p && typeof p.catch === 'function') p.catch(function () {});
+    }
+  }
+
+  // 非手勢搶救：有界 resume 重試（不重建）;救不回交給下一次手勢
+  function scheduleRecoverCheck() {
+    if (recoverTimer) return;
+    recoverTimer = setTimeout(function () {
+      recoverTimer = null;
+      if (Tone.getContext().state === 'running') { resumeAttempts = 0; gestureAttempts = 0; return; }
+      if (resumeAttempts < 4) { resumeAttempts++; nativeResume(); scheduleRecoverCheck(); }
+      else resumeAttempts = 0;
+    }, 300);
   }
 
   // 靜音看門狗：全部音釋放 silenceRebuildMs 後重建 synth。
@@ -95,7 +165,7 @@ const AudioEngine = (function () {
   // PolySynth 同頻多聲部的 release 配對歧義（卡音主要觸發條件）與同音相位疊加。
   function noteOn(midi) {
     if (!synth) return null;
-    ensureRunning();          // 手勢內兜底恢復：切回 app 後第一次按鍵即恢復音訊
+    ensureRunning(true);      // 手勢內兜底恢復：interrupted 直接重建,第一次按鍵即恢復音訊
     cancelWatchdog();
     const freq = midiToFreq(midi + transpose);
     const n = active.get(freq) || 0;
@@ -148,9 +218,11 @@ const AudioEngine = (function () {
     softClip,
     get config() { return CONFIG; },     // 供量測重建同一條鏈
     get output() { return shaper; },     // 供量測接分析器 + 節拍器接入軟削波
-    // 測試探針（同 Metronome._onClick 慣例）：驗證引用計數與看門狗重建
+    set onContextRebuild(cb) { onRebuild = cb; },   // context 重建後通知（節拍器重建）
+    // 測試探針（同 Metronome._onClick 慣例）：驗證引用計數、看門狗與 context 重建
     get _synth() { return synth; },
-    get _activeSize() { return active.size; }
+    get _activeSize() { return active.size; },
+    _rebuildContext: rebuildContext
   };
 })();
 

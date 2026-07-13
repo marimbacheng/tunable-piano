@@ -66,13 +66,16 @@
   function hookResume() {
     if (resumeHooked) return;
     resumeHooked = true;
-    const resume = function () { AudioEngine.ensureRunning(); };
+    // context 重建時節拍器一併重建（click/loop 綁舊 context）
+    AudioEngine.onContextRebuild = function () { Metronome.rebuild(); };
+    const resumeBg = function () { AudioEngine.ensureRunning(false); };      // 非手勢：resume 優先
+    const resumeGesture = function () { AudioEngine.ensureRunning(true); };  // 手勢內：interrupted 直接重建
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) resume();
+      if (!document.hidden) resumeBg();
     });
-    window.addEventListener('focus', resume);
-    window.addEventListener('pageshow', resume);
-    appEl.addEventListener('pointerdown', resume, true);   // capture:任何控制/琴鍵手勢先恢復
+    window.addEventListener('focus', resumeBg);
+    window.addEventListener('pageshow', resumeBg);
+    appEl.addEventListener('pointerdown', resumeGesture, true);   // capture:任何控制/琴鍵手勢先恢復
   }
 
   // ===== 橫向偵測 =====
