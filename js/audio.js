@@ -165,6 +165,11 @@ const AudioEngine = (function () {
   let resumeAttempts = 0;      // 非手勢 resume 重試計數（有界）
   let gestureAttempts = 0;     // 手勢內 resume 未果次數（第 2 次手勢起直接重建）
   let onRebuild = null;        // context 重建後通知（main.js 掛節拍器重建）
+  // 殭屍對策:iOS 退背景 10–20s 後切斷音訊硬體但 state 仍謊報 'running'(假死),
+  // 光看 state 會跳過所有恢復。forceDirty=true 時下一次手勢無視 running 強制重建。
+  // 來源:①main.js 退背景逾時標記;②scheduleLivenessCheck 偵測 currentTime 凍結。
+  let forceDirty = false;
+  let liveTimer = null;
 
   // 一律用 Tone.getContext()（即時）;Tone.context 為模組匯出的過期綁定，
   // setContext() 換新後仍回傳舊物件（實測 closed），誤用會造成無限重建。
@@ -182,6 +187,8 @@ const AudioEngine = (function () {
       Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }));
       synth = null; masterGain = null; shaper = null; sampler = null; samplerHpf = null;
       active.clear(); cancelWatchdog();
+      forceDirty = false;                                       // 新 context 即乾淨
+      if (liveTimer) { clearTimeout(liveTimer); liveTimer = null; }
       init();
       if (pianoBuffers) buildSampler();   // AudioBuffer 與 context 無關,免重新下載/解碼
       try { if (onRebuild) onRebuild(); } catch (_) {}
@@ -204,20 +211,43 @@ const AudioEngine = (function () {
     } catch (_) {}
     try {
       const st = Tone.getContext().state;
-      if (st === 'running') { resumeAttempts = 0; gestureAttempts = 0; return; }
+      // 非手勢時機（切回可見/focus）順手驗屍:running 但時鐘凍結 = 殭屍 → 標髒
+      if (fromGesture !== true) scheduleLivenessCheck();
+      // 注意:st==='running' 可能是殭屍謊報,forceDirty 時不得走快樂路徑
+      if (st === 'running' && !forceDirty) { resumeAttempts = 0; gestureAttempts = 0; return; }
       if (fromGesture === true) {
         // 重建只在手勢內做：非手勢時機建的新 context 是 suspended（仍需手勢才跑），
         // 非手勢重建無益且有連環重建風險（實測驗證）。
-        // interrupted → 立即重建;suspended → 先 resume,連兩次手勢仍未恢復也重建。
-        if (st === 'interrupted' || gestureAttempts >= 1) {
+        // forceDirty(殭屍) / interrupted → 立即重建;suspended → 先 resume,連兩次手勢仍未恢復也重建。
+        if (forceDirty || st === 'interrupted' || gestureAttempts >= 1) {
           gestureAttempts = 0;
+          forceDirty = false;
           rebuildContext();
+          nativeResume();   // 真手勢內新 context 本應 running;此為兜底（無害）
           return;
         }
         gestureAttempts++;
       }
       nativeResume();
       scheduleRecoverCheck();
+    } catch (_) {}
+  }
+
+  // 殭屍偵測（副防線）:state 報 'running' 但 currentTime 500ms 內未前進 = 音訊硬體已被切
+  // → 標髒,下一次手勢強制重建。單一計時槽,重複呼叫無累積。
+  function scheduleLivenessCheck() {
+    if (liveTimer) return;
+    try {
+      const ctx = nativeCtx();
+      if (!ctx || ctx.state !== 'running') return;
+      const t0 = ctx.currentTime;
+      liveTimer = setTimeout(function () {
+        liveTimer = null;
+        try {
+          const c = nativeCtx();
+          if (c && c.state === 'running' && c.currentTime === t0) forceDirty = true;
+        } catch (_) {}
+      }, 500);
     } catch (_) {}
   }
 
@@ -324,6 +354,7 @@ const AudioEngine = (function () {
     init, noteOn, noteOff, releaseAll, ensureRunning, midiToFreq,
     setA4, getA4, setTranspose, getTranspose,
     setTimbre, getTimbre, loadPiano,
+    markDirty: function () { forceDirty = true; },   // 退背景逾時由 main.js 標記(殭屍對策)
     set onPianoStatus(cb) { onPianoStatus = cb; },
     get pianoStatus() { return pianoStatus; },
     softClip,
@@ -335,6 +366,7 @@ const AudioEngine = (function () {
     get _sampler() { return sampler; },
     get _activeSize() { return active.size; },
     get _pianoBuffers() { return pianoBuffers; },
+    get _forceDirty() { return forceDirty; },
     _rebuildContext: rebuildContext
   };
 })();

@@ -45,6 +45,7 @@
       UI.initTheme();
       UI.initSlide();
       UI.initTimbre();
+      UI.initMenu();
       UI.initMetronome();
       UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
 
@@ -70,9 +71,19 @@
     // context 重建時節拍器一併重建（click/loop 綁舊 context）
     AudioEngine.onContextRebuild = function () { Metronome.rebuild(); };
     const resumeBg = function () { AudioEngine.ensureRunning(false); };      // 非手勢：resume 優先
-    const resumeGesture = function () { AudioEngine.ensureRunning(true); };  // 手勢內：interrupted 直接重建
+    const resumeGesture = function () { AudioEngine.ensureRunning(true); };  // 手勢內：髒/interrupted 直接重建
+    // 殭屍對策:iOS 退背景逾 ~10–20s 會切斷音訊硬體但 state 仍謊報 running。
+    // 退背景超過 DIRTY_MS 即標髒 → 回來第一次觸碰無視假 running 強制重建。
+    const DIRTY_MS = 8000;   // 比實測失效下限(10–15s)保守
+    let hideTime = 0;
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) resumeBg();
+      if (document.hidden) {
+        hideTime = Date.now();
+      } else {
+        if (hideTime && (Date.now() - hideTime > DIRTY_MS)) AudioEngine.markDirty();
+        hideTime = 0;
+        resumeBg();
+      }
     });
     window.addEventListener('focus', resumeBg);
     window.addEventListener('pageshow', resumeBg);
