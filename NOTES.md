@@ -104,6 +104,14 @@
 - 注意 CSS specificity:`body.theme-pink .chord-toggle` 會蓋過 `.chord-toggle.on`,故 `.on` 狀態需在主題區塊內明確重宣告。
 - 實測:粉紅各元素計算色值正確;切回經典完全不受污染;無 console error。
 
+## 切回無聲修復 + 卡長音 + 滑動換音域 + 自訂主題
+- **切回 app 無聲(實機確認修復)**:根因=移除無聲 loop 後 playback session 的 interrupted context 光靠 resume() 救不回。策略:手勢內 interrupted→整組重建 context(見 DECISIONS `bade9b0`)。實測矩陣:手勢+interrupted 一次重建、真手勢後 running;suspended 卡死第 2 次手勢重建;非手勢絕不重建(resume 呼叫 5 次封頂);正常 suspended resume 恢復不重建;重建後節拍器 240BPM/1.5s 走 6 拍(理論 6)、bpm/拍號保留。
+- **Tone 過期綁定(陷阱)**:`Tone.context` setContext 後仍指舊物件(state=closed)→ 曾致無限重建;`Tone.Transport.position` 於重建後 crash(getTicksAtTime undefined)。全改 getContext()/getTransport()/getDraw()。
+- **卡長音**:同頻引用計數(同音兩次 attack→聲部數 1,修正前 2)+ 靜音看門狗(放開 2.5s 後重建 synth,dispose 已驗、按住期間不動作)。
+- **滑動換音域**:錨點制;拖左 16→19(撞 maxStart 鉗制)、拖回 19→14(A3),卷軸/八度同步、按住音自動釋放、slide:true 入 localStorage。實機確認。
+- **自訂主題**:三色(#2a6f97/#f5ede3/#d1495b 測例)→亮背景自動深文字、白鍵維持白、accent 深→白字;重載三色/主題/選擇器可見性全還原;三預設互切無污染。
+- **本機開發陷阱**:python http.server 無 cache header,瀏覽器供舊 JS(重載也不換)→ 測試曾對舊檔誤測。對策:no-store 自訂 server(scratchpad/nocache_server.py)或換 origin(localhost↔127.0.0.1)。線上 Pages 有正常 cache 頭,不受影響。
+
 ## 粉紅淺色化 + 靜音出聲 + icon 內縮 + 防卡音
 - **粉紅主題二修**:黑鍵 #D4A4B8→**#DEB0C4**(亮度略升);上方介面全面淺色化 **#FFFAFA**(body/panel),深梅紫文字 #4a3540、粉調邊框/按鈕/卷軸,鍵盤底 #eadfe4;綠色執行狀態仍保留。實測色值正確、經典無污染。
 - **iOS 靜音模式出聲**:解鎖手勢內 (a) `navigator.audioSession.type='playback'`(iOS 16.4+);(b) 後備:循環播放無聲 wav `<audio>`(data URI,強制 playback session)。**實機靜音鍵行為未在此環境驗證**,留待 iPhone 確認。
