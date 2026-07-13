@@ -75,20 +75,15 @@
         </div>
       </div>
 
-      <!-- 可視白鍵數 -->
-      <div class="ctrl keys">
-        <span class="ctrl-label">琴鍵數（白鍵）</span>
+      <!-- 可視白鍵數 + 八度（合併雙列盒:省寬度讓控制列維持兩列,琴鍵區才夠大） -->
+      <div class="ctrl winctl">
+        <span class="ctrl-label">琴鍵數（白鍵）・八度</span>
         <div class="a4-row">
           <button id="keys-dec" class="stepper" type="button" aria-label="鍵數減">−</button>
           <span id="keys-display" class="keys-display">12</span>
           <button id="keys-inc" class="stepper" type="button" aria-label="鍵數加">＋</button>
         </div>
-      </div>
-
-      <!-- 八度切換 -->
-      <div class="ctrl oct">
-        <span class="ctrl-label">八度</span>
-        <div class="a4-row">
+        <div class="a4-row metro-row2">
           <button id="oct-dec" class="stepper" type="button" aria-label="低八度">◀</button>
           <span id="oct-display" class="keys-display">C4</span>
           <button id="oct-inc" class="stepper" type="button" aria-label="高八度">▶</button>
