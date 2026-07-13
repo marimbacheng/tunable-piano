@@ -18,6 +18,9 @@ const Keyboard = (function () {
   let visibleWhiteCount = 12;   // 預設可視白鍵數（6–20）
   let startWhiteIndex = 0;      // 可視視窗起點（whiteKeys 索引）
   const pressed = new Map();    // pointerId → 已按下的鍵元素（多點觸控正確復原）
+  let slideMode = false;        // 滑動換音域模式（UI「滑動」切換;預設關）
+  const slides = new Map();     // pointerId → { startX, startIndex }（滑動手勢錨點）
+  let onWindowChange = null;    // cb()：滑動平移視窗後通知 UI（同步卷軸/八度 + persist）
 
   function buildModel() {
     keys = []; whiteKeys = []; whiteIndexByMidi = {};
@@ -161,10 +164,33 @@ const Keyboard = (function () {
       if (ke) { ke.classList.add('active'); els.push(ke); }
     });
     pressed.set(e.pointerId, { els: els, freqs: freqs, midis: midis });
-    try { if (e.pointerId != null) el.setPointerCapture(e.pointerId); } catch (_) {}
+    if (slideMode) {
+      // 滑動模式：記錨點供 onSlideMove;不 setPointerCapture —— 視窗平移會重繪並
+      // 移除原鍵元素（capture 隨之失效），事件改由 document 層接手
+      slides.set(e.pointerId, { startX: e.clientX, startIndex: startWhiteIndex });
+    } else {
+      try { if (e.pointerId != null) el.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+  }
+
+  // 滑動換音域：按住琴鍵水平拖曳，以白鍵寬為步距平移可視視窗（錨點制，無漂移）。
+  // 平移觸發的 render() 會先收掉所有按住音（既有防殘響邏輯），故滑動即自然停音。
+  function onSlideMove(e) {
+    if (!slideMode || !container) return;
+    const st = slides.get(e.pointerId);
+    if (!st) return;
+    const whiteW = container.clientWidth / visibleWhiteCount;
+    if (!(whiteW > 0)) return;
+    const deltaKeys = Math.round((st.startX - e.clientX) / whiteW);  // 向左拖 → 看更高音域
+    const target = Math.min(maxStart(), Math.max(0, st.startIndex + deltaKeys));
+    if (target !== startWhiteIndex) {
+      setStartWhiteIndex(target);
+      if (onWindowChange) onWindowChange();
+    }
   }
 
   function onRelease(e) {
+    slides.delete(e.pointerId);          // 滑動錨點一律清除（pressed 可能已被重繪清掉）
     const rec = pressed.get(e.pointerId);
     if (!rec) return;
     rec.freqs.forEach(function (f) { AudioEngine.noteOff(f); });   // 放開才收音
@@ -184,8 +210,17 @@ const Keyboard = (function () {
       rec.els.forEach(function (el) { el.classList.remove('active'); });
     });
     pressed.clear();
+    slides.clear();
     AudioEngine.releaseAll();
   }
+
+  // 滑動換音域模式開關（關閉時清掉進行中的滑動錨點）
+  function setSlideMode(on) {
+    slideMode = !!on;
+    if (!slideMode) slides.clear();
+    return slideMode;
+  }
+  function isSlideMode() { return slideMode; }
 
   // 改可視白鍵數（6–20 鉗制），保留左緣;鍵少→鍵變寬（render 內 100/count）
   function setVisibleWhiteCount(n) {
@@ -225,6 +260,8 @@ const Keyboard = (function () {
     // 全域收放：放開處即使在鍵外/離開視窗也能復原對應鍵
     document.addEventListener('pointerup', onRelease);
     document.addEventListener('pointercancel', onRelease);
+    // 滑動換音域（slideMode 關閉時 onSlideMove 直接 return）
+    document.addEventListener('pointermove', onSlideMove);
     // 切離頁面/失焦時強制收音（放開事件可能永遠不會來）
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) releaseAllPressed();
@@ -237,7 +274,9 @@ const Keyboard = (function () {
     initKeyboard,
     setVisibleWhiteCount, setStartWhiteIndex, shiftOctave,
     setChordMode, isChordMode, setChordQuality, getChordQuality,
+    setSlideMode, isSlideMode,
     set onHeldChange(cb) { onHeldChange = cb; },
+    set onWindowChange(cb) { onWindowChange = cb; },
     MIN_WHITE, MAX_WHITE,
     get leftmostName() { return leftmostName(); },
     get totalWhites() { return whiteKeys.length; },

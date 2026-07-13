@@ -43,8 +43,11 @@
       UI.initTranspose();
       UI.initChord();
       UI.initTheme();
+      UI.initSlide();
       UI.initMetronome();
       UI.loadAndApply();      // 套用 localStorage 已存設定並刷新所有 UI
+
+      hookResume();           // 切回 app 恢復音訊（見下）
     } catch (err) {
       unlocked = false;       // 允許再試，並讓錯誤浮現而非靜默死畫面
       console.error('[unlock] 初始化失敗:', err);
@@ -54,6 +57,23 @@
   // pointerdown 為主（低延遲），click 為桌機/後備；旗標確保單次執行
   unlockBtn.addEventListener('pointerdown', unlock);
   unlockBtn.addEventListener('click', unlock);
+
+  // ===== 切回 app 恢復音訊 =====
+  // iOS 切換 app/鎖屏後 AudioContext 停在 suspended/interrupted,回來不會自動恢復
+  // →「回到 app 沒聲音」。頁面重新可見/取得焦點時主動 resume;另在 app 任何手勢
+  // 兜底（手勢內 resume 最可靠;AudioEngine.noteOn 內亦有同樣兜底）。
+  let resumeHooked = false;    // 防解鎖失敗重試時重複掛監聽
+  function hookResume() {
+    if (resumeHooked) return;
+    resumeHooked = true;
+    const resume = function () { AudioEngine.ensureRunning(); };
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) resume();
+    });
+    window.addEventListener('focus', resume);
+    window.addEventListener('pageshow', resume);
+    appEl.addEventListener('pointerdown', resume, true);   // capture:任何控制/琴鍵手勢先恢復
+  }
 
   // ===== 橫向偵測 =====
   // 需求：偵測到直向 → 蓋全螢幕提示；橫向自動移除。與解鎖狀態無關。

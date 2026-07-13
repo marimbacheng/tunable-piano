@@ -22,7 +22,8 @@ const UI = (function () {
           num: ts.numerator,
           den: ts.denominator,
           whiteCount: Keyboard.visibleWhiteCount,
-          startWhite: Keyboard.startWhiteIndex
+          startWhite: Keyboard.startWhiteIndex,
+          slide: Keyboard.isSlideMode()
         }));
       } catch (_) {}
     }, 150);
@@ -44,6 +45,7 @@ const UI = (function () {
     if (s.num != null && s.den != null) Metronome.setTimeSignature(s.num, s.den);
     if (s.whiteCount != null) Keyboard.setVisibleWhiteCount(s.whiteCount);
     if (s.startWhite != null) Keyboard.setStartWhiteIndex(s.startWhite);
+    if (s.slide != null) Keyboard.setSlideMode(!!s.slide);
     refreshAll();
   }
 
@@ -354,7 +356,23 @@ const UI = (function () {
     inc.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.shiftOctave(1); refreshWindow(); persist(); });
   }
 
-  return { initA4, initKeys, initScrollbar, initMetronome, initOctave, initTranspose, initChord, initTheme, loadAndApply };
+  // ===== 滑動換音域（按住琴鍵水平拖曳平移可視視窗;預設關） =====
+  function initSlide() {
+    const btn = document.getElementById('slide-toggle');
+    function render() { btn.classList.toggle('on', Keyboard.isSlideMode()); }
+    render();
+    refreshers.push(render);
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      Keyboard.setSlideMode(!Keyboard.isSlideMode());
+      render();
+      persist();
+    });
+    // 滑動平移視窗後：同步卷軸拇指/八度顯示 + 保存位置
+    Keyboard.onWindowChange = function () { refreshWindow(); persist(); };
+  }
+
+  return { initA4, initKeys, initScrollbar, initMetronome, initOctave, initTranspose, initChord, initTheme, initSlide, loadAndApply };
 })();
 
 window.UI = UI;
