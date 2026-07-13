@@ -444,6 +444,19 @@ const UI = (function () {
     inc.addEventListener('pointerdown', function (e) { e.preventDefault(); Keyboard.shiftOctave(1); refreshWindow(); persist(); });
   }
 
+  // ===== 設定選單（⚙ 開/✕ 關;面板覆蓋於控制列上方,不重排鍵盤） =====
+  function initMenu() {
+    const btn = document.getElementById('menu-toggle');
+    const panel = document.getElementById('menu-panel');
+    const closeBtn = document.getElementById('menu-close');
+    function setOpen(open) {
+      panel.hidden = !open;
+      btn.classList.toggle('on', open);
+    }
+    btn.addEventListener('pointerdown', function (e) { e.preventDefault(); setOpen(panel.hidden); });
+    closeBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); setOpen(false); });
+  }
+
   // ===== 音色（合成音/鋼琴）=====
   // 合成音即開即用;鋼琴取樣解鎖後背景載入,鈕上顯示進度,載完可切。
   // 未就緒先選鋼琴也可以:先發合成音,載完自動改用鋼琴（AudioEngine.instrument 判斷）。
@@ -497,7 +510,7 @@ const UI = (function () {
     Keyboard.onWindowChange = function () { refreshWindow(); persist(); };
   }
 
-  return { initA4, initKeys, initScrollbar, initMetronome, initOctave, initTranspose, initChord, initTheme, initSlide, initTimbre, loadAndApply };
+  return { initA4, initKeys, initScrollbar, initMetronome, initOctave, initTranspose, initChord, initTheme, initSlide, initTimbre, initMenu, loadAndApply };
 })();
 
 window.UI = UI;

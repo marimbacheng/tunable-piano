@@ -436,6 +436,48 @@ body.theme-pink .swatch.on { border-color: #c26e93; }
 }
 .beat-dots .dot.active { background: #8fd0ff; }
 
+/* ===== 設定選單（次要設定收納:動態島機型主列才不會爆成三排） ===== */
+.menu-btn {
+  width: 38px;
+  height: 32px;
+  font-size: 1.1rem;
+  line-height: 1;
+  border: 1px solid #4a90d9;
+  border-radius: 8px;
+  background: #1e2a3a;
+  color: #eaf2ff;
+  cursor: pointer;
+  touch-action: none;
+}
+.menu-btn:active { background: #2a3a52; }
+.menu-btn.on { background: #2f6d3a; border-color: #4caf50; }
+.menu-panel {
+  position: absolute;             /* .app 為 fixed,作其定位基準;覆蓋控制列不重排鍵盤 */
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 8px;
+  max-height: 88%;
+  overflow-y: auto;
+  touch-action: pan-y;            /* 面板過高時允許縱向捲動 */
+  background: rgba(16, 16, 21, 0.97);
+  border: 1px solid #33333d;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+body.theme-pink .menu-btn { background: #f7e9ef; border-color: #c98cab; color: #5c3a4c; }
+body.theme-pink .menu-btn:active { background: #efd8e2; }
+body.theme-pink .menu-btn.on { background: #c2537f; border-color: #a53f68; color: #fff; }
+body.theme-pink .menu-panel { background: rgba(255, 250, 250, 0.97); border-color: #e0c8d3; }
+body.theme-custom .menu-btn { background: var(--c-btn); border-color: var(--c-btn-border); color: var(--c-text); }
+body.theme-custom .menu-btn.on { background: var(--c-accent); border-color: var(--c-accent-border); color: var(--c-accent-text); }
+body.theme-custom .menu-panel { background: var(--c-panel); border-color: var(--c-panel-border); }
+
 /* ===== 上方卷軸 ===== */
 .scrollbar {
   position: relative;
