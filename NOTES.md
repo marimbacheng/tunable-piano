@@ -104,6 +104,12 @@
 - 注意 CSS specificity:`body.theme-pink .chord-toggle` 會蓋過 `.chord-toggle.on`,故 `.on` 狀態需在主題區塊內明確重宣告。
 - 實測:粉紅各元素計算色值正確;切回經典完全不受污染;無 console error。
 
+## 音色切換 + 殭屍音訊終局 + 控制列最終形態
+- **鋼琴取樣**:Salamander 24 檔 1.8MB;headroom 離線量測 4 音和弦 -10dB→0.258/-8→0.325/-6→0.409 皆<0.7 全線性;密集彈奏(4音×6連擊)-6dB 峰值 0.517 仍全線性;音準 440→441.55/432→433.48(相對位移 -31.9 音分=理論值;+6 音分為取樣非諧性,對照組合成音 440.01 證方法無偏)。
+- **破音歷程**:疑鏈路→量測否決→加 85Hz 高通+-9dB(裝置端假設)→實機確認為個別硬體問題+低音太小聲→**移除高通、退回 -6dB(定案 `e8694c6`)**。
+- **殭屍音訊(實機確認修復)**:state 謊報 running + 純 WebAudio 重建無效 → 髒污標記(>8s)+ currentTime 驗屍 + 手勢內無聲 <audio> kick(1.5s 後卸載)。驗證:謊報 running 下第一按重建+發聲;3s 不標髒/12s 標髒;時鐘凍結 500ms 標髒;健康路徑零誤標;kick 播放→卸載全流程。
+- **控制列**:「琴鍵數・八度」「音色・滑動」雙列合併盒 + ⚙ 於卷軸列 → 一般/瀏海 738/動態島 714 皆兩排(先前全平鋪會三排、全收選單被使用者退回)。選單面板 left/right/top 須加 env(safe-area-inset-*)(絕對定位不含 .app padding,曾被瀏海遮)。
+
 ## 切回無聲修復 + 卡長音 + 滑動換音域 + 自訂主題
 - **切回 app 無聲(實機確認修復)**:根因=移除無聲 loop 後 playback session 的 interrupted context 光靠 resume() 救不回。策略:手勢內 interrupted→整組重建 context(見 DECISIONS `bade9b0`)。實測矩陣:手勢+interrupted 一次重建、真手勢後 running;suspended 卡死第 2 次手勢重建;非手勢絕不重建(resume 呼叫 5 次封頂);正常 suspended resume 恢復不重建;重建後節拍器 240BPM/1.5s 走 6 拍(理論 6)、bpm/拍號保留。
 - **Tone 過期綁定(陷阱)**:`Tone.context` setContext 後仍指舊物件(state=closed)→ 曾致無限重建;`Tone.Transport.position` 於重建後 crash(getTicksAtTime undefined)。全改 getContext()/getTransport()/getDraw()。
