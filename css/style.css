@@ -93,6 +93,10 @@ html, body {
   border-radius: 8px;
   padding: 4px 7px;
 }
+/* 主控制列排版比例:各盒撐滿列寬(剩餘空間均分),不再左聚右空;
+   「設定」盒維持緊湊,被前面成長的盒推靠右緣 */
+.controls > .ctrl { flex: 1 0 auto; }
+.controls > .ctrl.menuc { flex: 0 0 auto; }
 .ctrl-label {
   display: block;
   font-size: 0.58rem;
@@ -453,9 +457,11 @@ body.theme-pink .swatch.on { border-color: #c26e93; }
 .menu-btn.on { background: #2f6d3a; border-color: #4caf50; }
 .menu-panel {
   position: absolute;             /* .app 為 fixed,作其定位基準;覆蓋控制列不重排鍵盤 */
-  top: 6px;
-  left: 6px;
-  right: 6px;
+  /* 邊界對齊鍵盤左右緣(= .app 的 safe-area padding 內):
+     絕對定位以 padding box 外緣為基準,不含 padding,直接 6px 會被瀏海/動態島遮住 */
+  top: calc(env(safe-area-inset-top) + 6px);
+  left: calc(env(safe-area-inset-left) + 6px);
+  right: calc(env(safe-area-inset-right) + 6px);
   z-index: 10;
   display: flex;
   flex-wrap: wrap;

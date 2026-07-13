@@ -170,6 +170,37 @@ const AudioEngine = (function () {
   // 來源:①main.js 退背景逾時標記;②scheduleLivenessCheck 偵測 currentTime 凍結。
   let forceDirty = false;
   let liveTimer = null;
+  // 系統 session 重激活 kick:iOS 長時間背景會去激活「系統層」音訊 session,
+  // 此時純 WebAudio 連新建 context 都接不回硬體(謊報 running 但無聲;實機證實
+  // 重建亦無效)。媒體元素播放是可靠的重激活手段(舊常駐無聲 loop 因此從沒此 bug,
+  // 但帶鎖屏控制器)。折衷:僅在髒污恢復的手勢內播 ~1s 無聲 <audio>,1.5s 後停止
+  // 並卸載 → 不常駐、鎖屏控制器至多短暫閃現。
+  const SILENT_WAV = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+  let kickEl = null;
+  let kickTimer = null;
+
+  function kickMediaSession() {
+    try {
+      if (!kickEl) {
+        kickEl = new Audio(SILENT_WAV);
+        kickEl.setAttribute('playsinline', '');
+        kickEl.loop = false;
+      } else if (!kickEl.src) {
+        kickEl.src = SILENT_WAV;
+      }
+      const p = kickEl.play();
+      if (p && typeof p.catch === 'function') p.catch(function () {});
+      if (kickTimer) clearTimeout(kickTimer);
+      kickTimer = setTimeout(function () {
+        kickTimer = null;
+        try {
+          kickEl.pause();
+          kickEl.removeAttribute('src');   // 卸載:避免鎖屏 Now Playing 殘留
+          kickEl.load();
+        } catch (_) {}
+      }, 1500);
+    } catch (_) {}
+  }
 
   // 一律用 Tone.getContext()（即時）;Tone.context 為模組匯出的過期綁定，
   // setContext() 換新後仍回傳舊物件（實測 closed），誤用會造成無限重建。
@@ -222,8 +253,11 @@ const AudioEngine = (function () {
         if (forceDirty || st === 'interrupted' || gestureAttempts >= 1) {
           gestureAttempts = 0;
           forceDirty = false;
-          rebuildContext();
-          nativeResume();   // 真手勢內新 context 本應 running;此為兜底（無害）
+          kickMediaSession();          // 先重激活系統 session（純 WebAudio 重建有時不足,實機證實）
+          const ok = rebuildContext();
+          if (!ok) forceDirty = true;  // 重建失敗保留髒污:下一按再試,不得靜默放棄
+          nativeResume();              // 真手勢內新 context 本應 running;此為兜底（無害）
+          scheduleLivenessCheck();     // 新 context 若仍殭屍(時鐘凍結)→ 再標髒,下一按再試
           return;
         }
         gestureAttempts++;
@@ -367,6 +401,7 @@ const AudioEngine = (function () {
     get _activeSize() { return active.size; },
     get _pianoBuffers() { return pianoBuffers; },
     get _forceDirty() { return forceDirty; },
+    get _kickEl() { return kickEl; },
     _rebuildContext: rebuildContext
   };
 })();
