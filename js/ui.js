@@ -23,7 +23,8 @@ const UI = (function () {
           den: ts.denominator,
           whiteCount: Keyboard.visibleWhiteCount,
           startWhite: Keyboard.startWhiteIndex,
-          slide: Keyboard.isSlideMode()
+          slide: Keyboard.isSlideMode(),
+          custom: customColors
         }));
       } catch (_) {}
     }, 150);
@@ -40,7 +41,10 @@ const UI = (function () {
     if (!s) return;
     if (s.a4 != null) AudioEngine.setA4(s.a4);
     if (s.transpose != null) AudioEngine.setTranspose(s.transpose);
-    if (s.theme != null) applyTheme(s.theme);
+    if (s.custom && hexRgb(s.custom.kb) && hexRgb(s.custom.bg) && hexRgb(s.custom.accent)) {
+      customColors = { kb: s.custom.kb, bg: s.custom.bg, accent: s.custom.accent };
+    }
+    if (s.theme != null) applyTheme(s.theme);   // custom 需在自訂色載入後套用
     if (s.bpm != null) Metronome.setBpm(s.bpm);
     if (s.num != null && s.den != null) Metronome.setTimeSignature(s.num, s.den);
     if (s.whiteCount != null) Keyboard.setVisibleWhiteCount(s.whiteCount);
@@ -322,14 +326,76 @@ const UI = (function () {
   // ===== 主題 =====
   let currentTheme = 'classic';
 
+  // 自訂主題三色（鍵盤/背景/啟動）;其餘配色由亮度衍生。預設 = 經典配色起手
+  let customColors = { kb: '#1b1b22', bg: '#1a1a1f', accent: '#4caf50' };
+
+  // --- 顏色工具（hex 混色/明暗/亮度） ---
+  function hexRgb(h) {
+    h = String(h).replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function rgbHex(r, g, b) {
+    function c(v) { return ('0' + Math.round(Math.min(255, Math.max(0, v))).toString(16)).slice(-2); }
+    return '#' + c(r) + c(g) + c(b);
+  }
+  function mix(h1, h2, t) {           // h1 → h2 線性混色,t∈[0,1]
+    const a = hexRgb(h1), b = hexRgb(h2);
+    if (!a || !b) return h1;
+    return rgbHex(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t);
+  }
+  function lighten(h, t) { return mix(h, '#ffffff', t); }
+  function darken(h, t) { return mix(h, '#000000', t); }
+  function lum(h) {                   // 感知亮度 0–1
+    const c = hexRgb(h);
+    return c ? (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255 : 0;
+  }
+
+  // 三色 → 完整 --c-* 變數組（依背景/鍵盤/啟動色亮度自動選深淺與文字色）
+  function deriveCustomVars(c) {
+    const bgLight = lum(c.bg) > 0.5;
+    const text = bgLight ? '#3a3540' : '#eaeaea';
+    const kbLight = lum(c.kb) > 0.55;
+    return {
+      '--c-bg': c.bg,
+      '--c-text': text,
+      '--c-panel': bgLight ? darken(c.bg, 0.04) : lighten(c.bg, 0.05),
+      '--c-panel-border': bgLight ? darken(c.bg, 0.14) : lighten(c.bg, 0.14),
+      '--c-label': mix(text, c.bg, 0.35),
+      '--c-btn': bgLight ? darken(c.bg, 0.08) : lighten(c.bg, 0.10),
+      '--c-btn-border': bgLight ? darken(c.bg, 0.22) : lighten(c.bg, 0.22),
+      '--c-input': bgLight ? '#ffffff' : darken(c.bg, 0.30),
+      '--c-kb-well': bgLight ? darken(c.bg, 0.12) : darken(c.bg, 0.45),
+      '--c-dim': mix(text, c.bg, 0.60),
+      '--c-thumb': mix(c.accent, bgLight ? darken(c.bg, 0.10) : lighten(c.bg, 0.10), 0.45),
+      '--c-bk': c.kb,
+      '--c-bk-active': kbLight ? darken(c.kb, 0.18) : lighten(c.kb, 0.28),
+      '--c-bk-border': darken(c.kb, 0.30),
+      '--c-wk-active': mix('#ffffff', c.kb, 0.22),          // 白鍵按下:染一點鍵盤色
+      '--c-wk-border': mix('#ffffff', c.kb, 0.40),
+      '--c-wk-label': kbLight ? darken(c.kb, 0.45) : c.kb,  // 白鍵字:深化的鍵盤色（白底可讀）
+      '--c-accent': c.accent,
+      '--c-accent-border': darken(c.accent, 0.25),
+      '--c-accent-text': lum(c.accent) > 0.55 ? '#222428' : '#ffffff'
+    };
+  }
+
+  function applyCustomVars() {
+    const vars = deriveCustomVars(customColors);
+    for (const k in vars) document.body.style.setProperty(k, vars[k]);
+  }
+
   function applyTheme(name) {
-    if (['classic', 'gray', 'pink'].indexOf(name) < 0) name = 'classic';
+    if (['classic', 'gray', 'pink', 'custom'].indexOf(name) < 0) name = 'classic';
     currentTheme = name;
-    document.body.classList.remove('theme-gray', 'theme-pink');
+    document.body.classList.remove('theme-gray', 'theme-pink', 'theme-custom');
     if (name !== 'classic') document.body.classList.add('theme-' + name);
+    if (name === 'custom') applyCustomVars();
     document.querySelectorAll('.swatch').forEach(function (b) {
       b.classList.toggle('on', b.dataset.theme === name);
     });
+    const cc = document.getElementById('custom-colors');
+    if (cc) cc.hidden = (name !== 'custom');   // 三色選擇器只在自訂主題顯示
   }
 
   function initTheme() {
@@ -340,6 +406,26 @@ const UI = (function () {
         persist();
       });
     });
+    // 三色選擇器：改色即時套用（input 連續觸發,persist 已去抖）
+    const pickers = { kb: 'cc-kb', bg: 'cc-bg', accent: 'cc-accent' };
+    function syncPickers() {
+      for (const key in pickers) {
+        const el = document.getElementById(pickers[key]);
+        if (el) el.value = customColors[key];
+      }
+    }
+    for (const key in pickers) {
+      (function (k) {
+        const el = document.getElementById(pickers[k]);
+        el.addEventListener('input', function () {
+          if (hexRgb(el.value)) customColors[k] = el.value;
+          applyTheme('custom');
+          persist();
+        });
+      })(key);
+    }
+    refreshers.push(syncPickers);
+    syncPickers();
     applyTheme(currentTheme);
   }
 

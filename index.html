@@ -132,13 +132,20 @@
         </div>
       </div>
 
-      <!-- 主題 -->
+      <!-- 主題（三種預設 + 自訂三色） -->
       <div class="ctrl theme">
         <span class="ctrl-label">主題</span>
         <div class="a4-row theme-row">
           <button class="swatch swatch-classic" type="button" data-theme="classic" aria-label="經典"></button>
           <button class="swatch swatch-gray" type="button" data-theme="gray" aria-label="深灰"></button>
           <button class="swatch swatch-pink" type="button" data-theme="pink" aria-label="粉紅"></button>
+          <button class="swatch swatch-custom" type="button" data-theme="custom" aria-label="自訂"></button>
+        </div>
+        <!-- 自訂主題三色（選「自訂」才顯示;其餘配色由亮度自動衍生） -->
+        <div id="custom-colors" class="custom-colors" hidden>
+          <label class="cc"><span>鍵盤</span><input id="cc-kb" type="color" value="#1b1b22"></label>
+          <label class="cc"><span>背景</span><input id="cc-bg" type="color" value="#1a1a1f"></label>
+          <label class="cc"><span>啟動</span><input id="cc-accent" type="color" value="#4caf50"></label>
         </div>
       </div>
     </div>

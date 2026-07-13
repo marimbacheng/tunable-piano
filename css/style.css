@@ -225,6 +225,84 @@ html, body {
 .swatch-classic { background: linear-gradient(135deg, #f4f4ef 50%, #1b1b22 50%); }
 .swatch-gray    { background: linear-gradient(135deg, #4a4a52 50%, #0e0e12 50%); }
 .swatch-pink    { background: linear-gradient(135deg, #ffffff 50%, #deb0c4 50%); }
+.swatch-custom  { background: conic-gradient(#e5484d, #f5d90a, #46a758, #00b4d8, #6e56cf, #e5484d); }
+
+/* ===== 自訂主題三色選擇器（選「自訂」色票才顯示） ===== */
+.custom-colors { display: flex; gap: 6px; margin-top: 4px; }
+.custom-colors .cc { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.custom-colors .cc span { font-size: 0.55rem; opacity: 0.75; }
+.custom-colors input[type="color"] {
+  width: 30px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #33333d;
+  border-radius: 5px;
+  background: none;
+  cursor: pointer;
+}
+
+/* ===== 自訂主題:鍵盤色/背景色/啟動色三色,其餘由 JS 依亮度衍生寫入 --c-* 變數 =====
+   註意 specificity:.on 狀態須在主題區塊內重宣告才能蓋過主題基色（同粉紅主題的教訓） */
+body.theme-custom {
+  --wk: #ffffff;                       /* 白鍵維持白（規格） */
+  --wk-active: var(--c-wk-active);
+  --wk-label: var(--c-wk-label);
+  --wk-border: var(--c-wk-border);
+  --bk: var(--c-bk);
+  --bk-active: var(--c-bk-active);
+  --bk-border: var(--c-bk-border);
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+body.theme-custom .keyboard { background: var(--c-kb-well); }
+body.theme-custom .ctrl { background: var(--c-panel); border-color: var(--c-panel-border); }
+body.theme-custom .ctrl-label { color: var(--c-label); }
+body.theme-custom .stepper,
+body.theme-custom .metro-toggle,
+body.theme-custom .a4-preset,
+body.theme-custom .qual,
+body.theme-custom .den-cycle,
+body.theme-custom .chord-toggle,
+body.theme-custom .tap {
+  background: var(--c-btn);
+  border-color: var(--c-btn-border);
+  color: var(--c-text);
+}
+body.theme-custom .stepper:active,
+body.theme-custom .metro-toggle:active,
+body.theme-custom .a4-preset:active,
+body.theme-custom .qual:active,
+body.theme-custom .den-cycle:active,
+body.theme-custom .tap:active { background: var(--c-btn-border); }
+body.theme-custom .a4-input,
+body.theme-custom .bpm-input {
+  background: var(--c-input);
+  border-color: var(--c-btn-border);
+  color: var(--c-text);
+}
+body.theme-custom .a4-display { color: var(--c-accent); }
+body.theme-custom .keys-display,
+body.theme-custom .ts-num { color: var(--c-text); }
+body.theme-custom .bpm-unit,
+body.theme-custom .ts-slash { color: var(--c-label); }
+body.theme-custom .chord-display { color: var(--c-dim); }
+body.theme-custom .chord-display.lit { color: var(--c-accent); }
+body.theme-custom .metro-toggle.on,
+body.theme-custom .chord-toggle.on,
+body.theme-custom .qual.on {
+  background: var(--c-accent);
+  border-color: var(--c-accent-border);
+  color: var(--c-accent-text);
+}
+body.theme-custom .beat-dots .dot { background: var(--c-dim); }
+body.theme-custom .beat-dots .dot.active { background: var(--c-accent); }
+body.theme-custom .scrollbar { background: var(--c-panel); border-color: var(--c-panel-border); }
+body.theme-custom .thumb { background: var(--c-thumb); }
+body.theme-custom .thumb:active { background: var(--c-thumb); }
+body.theme-custom .thumb::after { background: var(--c-accent-text); }
+body.theme-custom .swatch { border-color: var(--c-panel-border); }
+body.theme-custom .swatch.on { border-color: var(--c-accent); }
+body.theme-custom .custom-colors input[type="color"] { border-color: var(--c-btn-border); }
 
 /* ===== 粉紅主題:上方介面 #FFFAFA 淺色同色系,深梅紫文字;執行中狀態用玫瑰粉(同色系) ===== */
 body.theme-pink .keyboard { background: #eadfe4; }
