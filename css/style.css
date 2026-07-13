@@ -93,10 +93,8 @@ html, body {
   border-radius: 8px;
   padding: 4px 7px;
 }
-/* 主控制列排版比例:各盒撐滿列寬(剩餘空間均分),不再左聚右空;
-   「設定」盒維持緊湊,被前面成長的盒推靠右緣 */
+/* 主控制列排版比例:各盒撐滿列寬(剩餘空間均分),不再左聚右空 */
 .controls > .ctrl { flex: 1 0 auto; }
-.controls > .ctrl.menuc { flex: 0 0 auto; }
 .ctrl-label {
   display: block;
   font-size: 0.58rem;
@@ -484,12 +482,24 @@ body.theme-custom .menu-btn { background: var(--c-btn); border-color: var(--c-bt
 body.theme-custom .menu-btn.on { background: var(--c-accent); border-color: var(--c-accent-border); color: var(--c-accent-text); }
 body.theme-custom .menu-panel { background: var(--c-panel); border-color: var(--c-panel-border); }
 
-/* ===== 上方卷軸 ===== */
+/* ===== 上方卷軸列（卷軸 + ⚙ 設定;⚙ 放這裡不佔控制列寬度） ===== */
+.scroll-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  flex-shrink: 0;              /* 不得被壓縮（曾被壓到 2px 無法拖曳） */
+}
+.scroll-row .menu-btn {
+  width: 44px;
+  height: 22px;
+  font-size: 0.9rem;
+  padding: 0;
+}
 .scrollbar {
   position: relative;
   height: 15px;
-  flex-shrink: 0;              /* 不得被壓縮（曾被壓到 2px 無法拖曳） */
-  margin-top: 5px;
+  flex: 1 1 auto;
   background: #22222a;
   border: 1px solid #33333d;
   border-radius: 8px;

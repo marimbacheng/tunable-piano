@@ -57,13 +57,48 @@
         </div>
       </div>
 
-      <!-- 可視白鍵數（常用,留主列） -->
-      <div class="ctrl keys">
-        <span class="ctrl-label">琴鍵數（白鍵）</span>
+      <!-- A4 基準音 -->
+      <div class="ctrl a4">
+        <span class="ctrl-label">A4 基準</span>
+        <div class="a4-row">
+          <button id="a4-dec" class="stepper" type="button" aria-label="A4 減 1">−</button>
+          <input id="a4-input" class="a4-input" type="number" inputmode="numeric"
+                 min="415" max="445" step="1" value="440">
+          <button id="a4-inc" class="stepper" type="button" aria-label="A4 加 1">＋</button>
+          <span class="bpm-unit">Hz</span>
+        </div>
+        <div class="a4-presets">
+          <button class="a4-preset" type="button" data-hz="415">415</button>
+          <button class="a4-preset" type="button" data-hz="432">432</button>
+          <button class="a4-preset" type="button" data-hz="440">440</button>
+          <button class="a4-preset" type="button" data-hz="442">442</button>
+        </div>
+      </div>
+
+      <!-- 可視白鍵數 + 八度（雙列合併盒:省寬讓瀏海/動態島機也維持兩排） -->
+      <div class="ctrl winctl">
+        <span class="ctrl-label">琴鍵數（白鍵）・八度</span>
         <div class="a4-row">
           <button id="keys-dec" class="stepper" type="button" aria-label="鍵數減">−</button>
           <span id="keys-display" class="keys-display">12</span>
           <button id="keys-inc" class="stepper" type="button" aria-label="鍵數加">＋</button>
+        </div>
+        <div class="a4-row metro-row2">
+          <button id="oct-dec" class="stepper" type="button" aria-label="低八度">◀</button>
+          <span id="oct-display" class="keys-display">C4</span>
+          <button id="oct-inc" class="stepper" type="button" aria-label="高八度">▶</button>
+        </div>
+      </div>
+
+      <!-- 音色 + 滑動換音域（雙列合併盒,同上理由） -->
+      <div class="ctrl soundctl">
+        <span class="ctrl-label">音色・滑動</span>
+        <div class="a4-row">
+          <button id="timbre-synth" class="qual on" type="button">合成</button>
+          <button id="timbre-piano" class="qual" type="button">鋼琴</button>
+        </div>
+        <div class="a4-row metro-row2">
+          <button id="slide-toggle" class="chord-toggle" type="button">滑動</button>
         </div>
       </div>
 
@@ -96,66 +131,14 @@
         </div>
       </div>
 
-      <!-- 設定選單開關（次要設定收進選單:動態島機型寬度不足時主列才不會爆成三排） -->
-      <div class="ctrl menuc">
-        <span class="ctrl-label">設定</span>
-        <div class="a4-row">
-          <button id="menu-toggle" class="menu-btn" type="button" aria-label="設定選單">⚙</button>
-        </div>
-      </div>
     </div>
 
-    <!-- 設定選單面板：覆蓋於控制列上方（不重排鍵盤）;內容為「設定後暫時不動」的項目 -->
+    <!-- 設定選單面板：覆蓋於控制列上方（不重排鍵盤）;僅收納「主題」 -->
     <div id="menu-panel" class="menu-panel" hidden>
       <div class="ctrl menuc">
         <span class="ctrl-label">關閉</span>
         <div class="a4-row">
           <button id="menu-close" class="menu-btn" type="button" aria-label="關閉選單">✕</button>
-        </div>
-      </div>
-
-      <!-- A4 基準音 -->
-      <div class="ctrl a4">
-        <span class="ctrl-label">A4 基準</span>
-        <div class="a4-row">
-          <button id="a4-dec" class="stepper" type="button" aria-label="A4 減 1">−</button>
-          <input id="a4-input" class="a4-input" type="number" inputmode="numeric"
-                 min="415" max="445" step="1" value="440">
-          <button id="a4-inc" class="stepper" type="button" aria-label="A4 加 1">＋</button>
-          <span class="bpm-unit">Hz</span>
-        </div>
-        <div class="a4-presets">
-          <button class="a4-preset" type="button" data-hz="415">415</button>
-          <button class="a4-preset" type="button" data-hz="432">432</button>
-          <button class="a4-preset" type="button" data-hz="440">440</button>
-          <button class="a4-preset" type="button" data-hz="442">442</button>
-        </div>
-      </div>
-
-      <!-- 八度切換（視窗移動另有卷軸/滑動,故可收進選單） -->
-      <div class="ctrl oct">
-        <span class="ctrl-label">八度</span>
-        <div class="a4-row">
-          <button id="oct-dec" class="stepper" type="button" aria-label="低八度">◀</button>
-          <span id="oct-display" class="keys-display">C4</span>
-          <button id="oct-inc" class="stepper" type="button" aria-label="高八度">▶</button>
-        </div>
-      </div>
-
-      <!-- 滑動換音域：按住琴鍵水平拖曳平移可視視窗（預設關） -->
-      <div class="ctrl slide">
-        <span class="ctrl-label">滑動換音域</span>
-        <div class="a4-row">
-          <button id="slide-toggle" class="chord-toggle" type="button">滑動</button>
-        </div>
-      </div>
-
-      <!-- 音色:合成音(即開即用)/鋼琴(取樣背景載入,載完可切) -->
-      <div class="ctrl timbre">
-        <span class="ctrl-label">音色</span>
-        <div class="a4-row">
-          <button id="timbre-synth" class="qual on" type="button">合成</button>
-          <button id="timbre-piano" class="qual" type="button">鋼琴</button>
         </div>
       </div>
 
@@ -177,9 +160,12 @@
       </div>
     </div>
 
-    <!-- 上方卷軸：拖動可視視窗於 A1–C6 -->
-    <div id="scrollbar" class="scrollbar">
-      <div id="scroll-thumb" class="thumb"></div>
+    <!-- 上方卷軸：拖動可視視窗於 A1–C6;⚙ 設定(主題選單)靠右,不佔控制列 -->
+    <div class="scroll-row">
+      <div id="scrollbar" class="scrollbar">
+        <div id="scroll-thumb" class="thumb"></div>
+      </div>
+      <button id="menu-toggle" class="menu-btn" type="button" aria-label="設定選單">⚙</button>
     </div>
 
     <!-- 鍵盤 -->

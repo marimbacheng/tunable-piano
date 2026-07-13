@@ -19,12 +19,11 @@ const AudioEngine = (function () {
     // 兜住 Tone.PolySynth 聲部追蹤遺失（同音快速重觸發）造成 releaseAll 也收不掉的卡長音。
     silenceRebuildMs: 2500,
     // 鋼琴取樣：release=放開後的收音淡出。
-    // 離線量測:密集彈奏(4音和弦×6連擊)-6dB 峰值 0.517、0% 超 knee → 我方鏈路全線性,
-    // 實機「破破感」來自裝置端(小喇叭低頻過載/iOS 輸出限幅)。對策:
-    // ①鋼琴路徑高通 85Hz(小喇叭發不出的超低頻純耗喇叭衝程);②-9dB 少推輸出限幅。
+    // 離線量測:密集彈奏(4音和弦×6連擊)-6dB 峰值 0.517、0% 超 knee → 鏈路全線性。
+    // 曾加 85Hz 高通 + 降至 -9dB 防「破破感」,後確認破音為個別硬體問題,
+    // 且高通使低音太小聲 → 使用者定案:移除高通、退回 -6dB。
     samplerRelease: 1.2,
-    samplerDb: -9,
-    samplerHpfHz: 85
+    samplerDb: -6
   };
 
   let a4 = 440;             // 基準頻率（Hz）
@@ -45,7 +44,6 @@ const AudioEngine = (function () {
   ];
   let timbre = 'synth';         // 'synth' | 'piano'（piano 需樣本就緒才實際發聲,否則先用合成音）
   let sampler = null;           // Tone.Sampler
-  let samplerHpf = null;        // 鋼琴路徑高通（防小喇叭低頻過載;合成音路徑不經過）
   let pianoBuffers = null;      // 音名 → AudioBuffer（解碼快取）
   let pianoStatus = 'idle';     // idle | loading | ready | error
   let pianoLoadPromise = null;
@@ -131,16 +129,13 @@ const AudioEngine = (function () {
   }
 
   // 由快取 AudioBuffer 建 Sampler（init 後、看門狗與 context 重建皆可重呼）
-  // 鏈:Sampler → 高通(85Hz) → masterGain → 軟削波
+  // 鏈:Sampler → masterGain → 軟削波（無高通:低音完整,見 CONFIG 註記）
   function buildSampler() {
     if (!pianoBuffers || !masterGain) return;
     try { if (sampler) sampler.dispose(); } catch (_) {}
-    try { if (samplerHpf) samplerHpf.dispose(); } catch (_) {}
-    samplerHpf = new Tone.Filter({ type: 'highpass', frequency: CONFIG.samplerHpfHz, rolloff: -12 })
-      .connect(masterGain);
     const urls = {};
     for (const k in pianoBuffers) urls[k] = new Tone.ToneAudioBuffer(pianoBuffers[k]);
-    sampler = new Tone.Sampler({ urls: urls, release: CONFIG.samplerRelease }).connect(samplerHpf);
+    sampler = new Tone.Sampler({ urls: urls, release: CONFIG.samplerRelease }).connect(masterGain);
     sampler.volume.value = CONFIG.samplerDb;
   }
 
@@ -213,10 +208,9 @@ const AudioEngine = (function () {
   function rebuildContext() {
     try {
       const old = Tone.getContext();
-      const oldSynth = synth, oldGain = masterGain, oldShaper = shaper,
-            oldSampler = sampler, oldHpf = samplerHpf;
+      const oldSynth = synth, oldGain = masterGain, oldShaper = shaper, oldSampler = sampler;
       Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }));
-      synth = null; masterGain = null; shaper = null; sampler = null; samplerHpf = null;
+      synth = null; masterGain = null; shaper = null; sampler = null;
       active.clear(); cancelWatchdog();
       forceDirty = false;                                       // 新 context 即乾淨
       if (liveTimer) { clearTimeout(liveTimer); liveTimer = null; }
@@ -224,7 +218,6 @@ const AudioEngine = (function () {
       if (pianoBuffers) buildSampler();   // AudioBuffer 與 context 無關,免重新下載/解碼
       try { if (onRebuild) onRebuild(); } catch (_) {}
       try { if (oldSampler) oldSampler.dispose(); } catch (_) {}
-      try { if (oldHpf) oldHpf.dispose(); } catch (_) {}
       try { if (oldSynth) oldSynth.dispose(); } catch (_) {}
       try { if (oldGain) oldGain.dispose(); } catch (_) {}
       try { if (oldShaper) oldShaper.dispose(); } catch (_) {}
