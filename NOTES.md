@@ -123,3 +123,11 @@
 - **iOS 靜音模式出聲**:解鎖手勢內 (a) `navigator.audioSession.type='playback'`(iOS 16.4+);(b) 後備:循環播放無聲 wav `<audio>`(data URI,強制 playback session)。**實機靜音鍵行為未在此環境驗證**,留待 iPhone 確認。
 - **icon 內縮**:鍵盤區邊距 14→27(左右)、底 170→150,四角落在 iOS 圓角遮罩(r≈22%)安全區內,不再裁切。重產 180/192/512。
 - **防卡音(根因分析)**:偶發卡音來自 (a) iOS 放開事件遺失(pointerup 未達)或 (b) Tone PolySynth 同音重疊時 triggerRelease 配對失敗(已知問題)。雙層保險:①最後一指放開時 `AudioEngine.releaseAll()`(此刻不應有持續音,兜住配對失敗);②`visibilitychange(hidden)/pagehide/blur` → `releaseAllPressed()` 強制收音+清視覺+清 held(兜住事件遺失)。實測:雙指先後放開→最後一指觸發 releaseAll;down 後 blur(模擬事件遺失)→ 收音、active 清除、和弦顯示歸「—」。
+
+## 離線 PWA(Service Worker)
+- **決策**:手寫 `sw.js`(不用 Workbox/vite-plugin-pwa,守住「無 build step」);Tone.js 由 CDN 改自帶 `js/vendor/Tone.js`(離線 precache 只能可靠處理同源;`index.html` 原註解已預告此步)。詳見 DECISIONS「離線 / PWA」。
+- **precache 清單**:`caches.addAll` 原子寫入 37 筆 = index.html + `./` + manifest + style.css + 5 支 js + 自帶 Tone.js + 3 圖示 + **24 個鋼琴 mp3**。缺任一 mp3 → 離線切鋼琴無聲(fail-loud:漏一個整個 install 失敗)。
+- **策略**:`install` precache→`skipWaiting`;`activate` 刪舊版 cache→`clients.claim`;`fetch` 同源 cache-first、未命中回填、navigation 離線退回快取 index.html。等同參考做法 autoUpdate。
+- **實測(本機關站模擬離線)**:先連網載入 → SW `swReady`/`controller`=true、`tunable-piano-precache-v1` 快取 **37 筆**(mp3 24、含 index/Tone/`./`)、Tone 載入 v14.8.49。**關掉 http.server 後**重新導航:頁面載入(title 正確)、Tone + 四模組(AudioEngine/Keyboard/Metronome/UI)全在、controller=true、`fetch('audio/piano/C4.mp3')` 純從快取取回 **78718 bytes**、離線載入零 console error。→ 離線發聲關鍵(鋼琴取樣可取)證實。
+- **更新紀律**:改任何 precache 資產必 bump `CACHE` 版本號、同步 `ASSETS` 清單;否則舊 SW 供舊快取。見 DEPLOYMENT。
+- **待實機確認**:iOS Safari 加入主畫面後飛航模式開啟、切鋼琴發聲(桌機 Chromium 已驗證 SW 路徑)。

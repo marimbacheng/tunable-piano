@@ -1,8 +1,15 @@
 # ARCHITECTURE — Tunable Piano
 
-純前端、無 build。`index.html` 於 `<head>` 由 CDN 載入 Tone.js,`<body>` 末依序載入
-`audio → keyboard → metronome → ui → main`。各模組為 IIFE,對外掛在 `window`
-(`AudioEngine`/`Keyboard`/`Metronome`/`UI`)。
+純前端、無 build。`index.html` 於 `<head>` 載入**自帶** Tone.js(`js/vendor/Tone.js`,原走 CDN,
+離線化後改自帶),`<body>` 末依序載入 `audio → keyboard → metronome → ui → main`,再註冊 `sw.js`。
+各模組為 IIFE,對外掛在 `window`(`AudioEngine`/`Keyboard`/`Metronome`/`UI`)。
+
+## 離線 PWA(sw.js)
+手寫 Service Worker(無 Workbox/建置)。`install` 用 `caches.addAll` 把全資源(index/css/5 支 js/
+自帶 Tone.js/manifest/3 圖示/**24 個鋼琴 mp3**,共 37 筆)precache 進版本化 cache;`activate` 清舊版
+cache + `clients.claim`;`fetch` 同源 cache-first、未命中回填、navigation 離線退回快取 `index.html`。
+`skipWaiting`+`clients.claim` 達 autoUpdate。純前端無後端,離線無功能缺口。SW 只攔網路 fetch,
+**不涉 AudioContext**,與切回恢復/殭屍重建機制正交、互不影響。更新須 bump `CACHE` 版本號(見 DEPLOYMENT)。
 
 ## DOM 結構(index.html)
 `#unlock`(解鎖層) / `#rotate`(直向提示) / `#app`:

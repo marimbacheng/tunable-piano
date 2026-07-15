@@ -14,8 +14,8 @@
   <link rel="manifest" href="manifest.json">
   <!-- 相對路徑;禁用絕對路徑以相容 GitHub Pages 子路徑 -->
   <link rel="stylesheet" href="css/style.css">
-  <!-- Tone.js（開發期 CDN；M6 若離線再改自帶） -->
-  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+  <!-- Tone.js 自帶（v14.8.49；離線 PWA 需同源 precache，禁 CDN） -->
+  <script src="js/vendor/Tone.js"></script>
 </head>
 <body>
   <!-- 解鎖層：手勢內啟動 AudioContext -->
@@ -188,5 +188,16 @@
   <script src="js/metronome.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
+
+  <!-- Service Worker 註冊（離線 PWA）;相對路徑相容 GitHub Pages 子路徑,scope=本目錄 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (e) {
+          console.warn('[sw] 註冊失敗:', e);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

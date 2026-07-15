@@ -119,6 +119,24 @@ commit 連結:`https://github.com/marimbacheng/tunable-piano/commit/<hash>`。
   代價:恢復瞬間鎖屏控制器可能短暫閃現(~1.5s);恢復「會要等一下」屬可接受(使用者定案)。
   落選:只信 state(被謊報跳過)、加回常駐 loop(控制器回歸)、非手勢重建(連環重建)。
 
+## 離線 / PWA
+
+- **離線用手寫 `sw.js`,不用 vite-plugin-pwa/Workbox** — (本次)
+  為何:專案寫死「無框架、無 build step」,Workbox 需建置流程。純前端無後端、無 API,離線無功能缺口,
+  一支手寫 Service Worker(install precache 全資源 → fetch cache-first)即足夠、且維持無建置。
+  策略:版本化 `CACHE` + `skipWaiting`/`clients.claim`(等同參考做法的 autoUpdate,下次連網載入自動換新版、清舊 cache);
+  navigation 離線退回快取 `index.html`。本機關站實測:頁面、Tone、四模組、`C4.mp3`(78718B)全從快取供應。
+  落選:vite-plugin-pwa(需引入 build step,破壞寫死約束)。
+
+- **Tone.js 由 CDN 改自帶 `js/vendor/Tone.js`** — (本次;`index.html` 原註解已預告「M6 離線再改自帶」)
+  為何:離線 precache 只能可靠處理**同源**資源;跨源 CDN 走 no-cors/opaque 或依賴 CDN CORS,脆弱。
+  自帶(下載 v14.8.49,349KB)與專案「資產自帶、相對路徑、禁絕對路徑」原則、及 `0baedec`(拒線上音源改自帶取樣)一致。
+  落選:precache CDN URL(依賴 cdn CORS、URL 固定,脆弱)、動態 import(無建置無意義)。
+
+- **`addAll` precache 為原子操作(fail-loud)** — (本次)
+  為何:清單任一資源 404 → 整個 install 失敗、SW 不啟用。刻意如此:寧可裝不成也不留「半套快取」
+  (最怕漏快取某 mp3 → 離線切鋼琴無聲卻沒察覺)。故清單須精確;新增資產同步加進清單並 bump `CACHE`。
+
 ## 版面 / 主題
 
 - **控制列最終形態:主列=節拍器/A4/琴鍵數/首調/和弦,選單=音色/滑動/八度/主題** — `a56a9ee`

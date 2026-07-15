@@ -27,6 +27,14 @@ curl -s "https://marimbacheng.github.io/tunable-piano/js/audio.js?cb=$RANDOM" | 
 > 慣例:每次部署後用 `curl + grep` 對線上檔案核對本次改動的特徵(某函式名、某色碼),
 > 因為 push 後短時間內 CDN 可能仍供上一版。等特徵出現才算真的上線。
 
+### Service Worker 更新紀律(關鍵,離線化後新增)
+- **改任何被 precache 的資產(js/css/html/mp3/圖示/Tone.js)→ 必 bump `sw.js` 的 `CACHE` 版本號**
+  (如 `tunable-piano-precache-v1` → `-v2`)。否則舊 SW 命中舊快取,使用者永遠看不到新版。
+- 新增/刪除資產 → 同步改 `sw.js` 的 `ASSETS` 清單(`addAll` 原子:漏一個 404 → 整個 install 失敗)。
+- 更新機制:`skipWaiting`+`clients.claim`,使用者下次連網載入即自動換新版、清舊 cache(autoUpdate)。
+- 上線核對:除 `curl+grep` 特徵字串,另可在裝置 devtools → Application → Service Workers 看版本、
+  Cache Storage 看 `tunable-piano-precache-vN` 是否為新號。
+
 ## 首次設定(已完成,僅備查)
 ```bash
 gh repo create tunable-piano --public --source=. --remote=origin --push
@@ -68,6 +76,7 @@ push 後同樣等 Pages 重建 + curl 核對。
 - **A2HS 換名/換圖**:iOS 快取加入主畫面的名稱與圖示。改過之後,**要先刪舊捷徑再重新「加入主畫面」**才會更新。
 - **節拍器拍點亮燈**:靠 `requestAnimationFrame`(Tone.Draw),背景/隱藏分頁會暫停 → 屬正常,回前景即恢復。
 - **音訊解鎖**:首次進站要點「開始」(手勢內啟動 AudioContext),iOS 必須。
-- **鋼琴取樣**:首次載入下載 audio/piano/ 24 檔(1.8MB),之後瀏覽器快取;離線 PWA 要一併快取。
-- **離線**:目前 Tone.js 走 CDN,**飛航模式不可用**(完整離線 PWA 未做,見 STATE 待辦)。
+- **鋼琴取樣**:首次載入下載 audio/piano/ 24 檔(1.8MB);已由 `sw.js` precache,離線切鋼琴照樣發聲。
+- **離線 PWA(已做)**:`sw.js` precache 全資源(含自帶 Tone.js + 24 mp3)。**首次一定要有網路**讓 SW 裝好;
+  之後(加到主畫面或直接開)可完全離線、飛航模式可用。首次沒網 → 打不開。設定存 localStorage,離線保留。
 - 部署前本機自測:本機起站(注意上方快取陷阱)→ 桌機瀏覽器 + 手機同區網 IP 實測。
