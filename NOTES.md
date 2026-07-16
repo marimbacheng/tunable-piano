@@ -130,4 +130,22 @@
 - **策略**:`install` precache→`skipWaiting`;`activate` 刪舊版 cache→`clients.claim`;`fetch` 同源 cache-first、未命中回填、navigation 離線退回快取 index.html。等同參考做法 autoUpdate。
 - **實測(本機關站模擬離線)**:先連網載入 → SW `swReady`/`controller`=true、`tunable-piano-precache-v1` 快取 **37 筆**(mp3 24、含 index/Tone/`./`)、Tone 載入 v14.8.49。**關掉 http.server 後**重新導航:頁面載入(title 正確)、Tone + 四模組(AudioEngine/Keyboard/Metronome/UI)全在、controller=true、`fetch('audio/piano/C4.mp3')` 純從快取取回 **78718 bytes**、離線載入零 console error。→ 離線發聲關鍵(鋼琴取樣可取)證實。
 - **更新紀律**:改任何 precache 資產必 bump `CACHE` 版本號、同步 `ASSETS` 清單;否則舊 SW 供舊快取。見 DEPLOYMENT。
-- **待實機確認**:iOS Safari 加入主畫面後飛航模式開啟、切鋼琴發聲(桌機 Chromium 已驗證 SW 路徑)。
+
+### 實機「未連接網際網路」→ 根因分析(非程式 bug)
+- 現象:iPhone 離線開 app,Safari 報「尚未連接網際網路」。
+- 假設與排除(全用可執行檢查):
+  - **H3 precache 有 404 → addAll 原子失敗**:線上逐一 curl **37 筆全 200** → 排除。
+  - **H2 `Vary` 不匹配 → caches.match 落空**:Pages 確實送 `vary: Accept-Encoding`(本機 python server 不送,故本機測不出此差異)。
+    但在**真實 Pages** 實測:SW 安裝 OK、快取 37 筆、`caches.match` 對 `/`、`index.html`、`C4.mp3` **預設即命中**(無需 `ignoreVary`)→ **排除**。
+    (原理:`Accept-Encoding` 屬 forbidden header,不存在於 Request 物件,Vary 比對為「兩邊皆無」→ 命中。)
+  - **H1 SW 根本沒裝**:成立。新版剛上線,該機從未在上線後連網開過;主畫面舊捷徑指向無 SW 的舊版。
+- 結論:**程式與部署皆正確**,屬「首次必須連網」的固有前提 + 狀態不可見。
+- 對策(非蠻幹修 code):把不可見狀態**顯性化** → 解鎖層加 `#sw-status` 離線就緒指示;
+  文件補 iOS 主畫面 App 與 Safari 可能各自獨立儲存(須用主畫面圖示連網開一次)。
+
+### v2(離線就緒指示)
+- 改 `index.html`/`css/style.css`(皆在 precache 清單)→ 依紀律 bump `CACHE` v1→**v2**。
+- 實測(本機 no-store server,避開快取陷阱):載入後 `cacheNames` **只剩 v2**(v1 已自動清除,證 autoUpdate+清舊 cache 有效)、
+  v2 共 **37 筆**、指示器「✓ 離線就緒(可飛航模式使用)」+ `.ready` 樣式、解鎖仍正常(app 顯示、渲染 20 鍵)。
+  **關站後**重載:頁面/Tone/controller 皆在、指示器仍就緒、`C4.mp3` 78718B 從快取取回、零 console error。
+- **待實機確認**:iOS 主畫面 App 連網開一次見「✓ 離線就緒」→ 飛航模式可開、切鋼琴發聲。

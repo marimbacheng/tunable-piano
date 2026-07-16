@@ -21,6 +21,8 @@
   <!-- 解鎖層：手勢內啟動 AudioContext -->
   <div id="unlock" class="overlay">
     <button id="unlock-btn" class="unlock-btn" type="button">點擊開始</button>
+    <!-- 離線就緒指示:precache 完成前不可離線使用,狀態原本隱形,故顯性化 -->
+    <div id="sw-status" class="sw-status" role="status" aria-live="polite"></div>
   </div>
 
   <!-- 橫向提示層：直向時蓋滿，橫向自動移除 -->
@@ -189,15 +191,42 @@
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 
-  <!-- Service Worker 註冊（離線 PWA）;相對路徑相容 GitHub Pages 子路徑,scope=本目錄 -->
+  <!-- Service Worker 註冊（離線 PWA）;相對路徑相容 GitHub Pages 子路徑,scope=本目錄。
+       另把「離線就緒」狀態顯性化:precache 未完成前離線會打不開,使用者需看得到才敢離線。 -->
   <script>
-    if ('serviceWorker' in navigator) {
+    (function () {
+      var el = document.getElementById('sw-status');
+      var PREFIX = 'tunable-piano-precache-';
+      var TOTAL = 37;                       // 與 sw.js 的 ASSETS 筆數一致（addAll 原子:未完成時為 0）
+
+      function say(text, cls) {
+        if (!el) return;
+        el.textContent = text;
+        el.className = 'sw-status' + (cls ? ' ' + cls : '');
+      }
+      if (!('serviceWorker' in navigator)) { say('此瀏覽器不支援離線', 'warn'); return; }
+
+      say('離線準備中…');
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js').catch(function (e) {
           console.warn('[sw] 註冊失敗:', e);
+          say('離線快取失敗（重新整理再試）', 'warn');
         });
+        poll(0);
       });
-    }
+
+      // 輪詢 precache 完成度。addAll 為原子:完成前 keys()=0,完成即跳 TOTAL。
+      function poll(n) {
+        caches.keys().then(function (names) {
+          var name = names.filter(function (k) { return k.indexOf(PREFIX) === 0; })[0];
+          if (!name) { if (n < 100) setTimeout(function () { poll(n + 1); }, 600); return; }
+          caches.open(name).then(function (c) { return c.keys(); }).then(function (reqs) {
+            if (reqs.length >= TOTAL) { say('✓ 離線就緒（可飛航模式使用）', 'ready'); return; }
+            if (n < 100) setTimeout(function () { poll(n + 1); }, 600);
+          });
+        }).catch(function () { if (n < 100) setTimeout(function () { poll(n + 1); }, 1000); });
+      }
+    })();
   </script>
 </body>
 </html>

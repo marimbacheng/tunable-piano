@@ -12,7 +12,7 @@
 // 更新紀律(重要)：任何資產(js/css/html/mp3/圖示)變動,務必 bump 下方 CACHE 版本號,
 // 否則舊 SW 會永遠供舊快取。bump 後 autoUpdate:下次連網載入自動換新、清舊 cache。
 
-const CACHE = 'tunable-piano-precache-v1';
+const CACHE = 'tunable-piano-precache-v2';
 
 // 鋼琴取樣:每小三度一檔(A/C/Ds/Fs × 八度 1–6),共 24 檔
 const PIANO = [];

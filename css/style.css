@@ -36,8 +36,20 @@ html, body {
 }
 
 /* 直向提示層需蓋在解鎖層之上（含解鎖前） */
-#unlock { z-index: 20; }
+/* #unlock 疊放解鎖鈕 + 離線就緒指示（column;不影響 #rotate） */
+#unlock { z-index: 20; flex-direction: column; gap: 1rem; }
 #rotate { z-index: 30; }
+
+/* ===== 離線就緒指示（解鎖層） ===== */
+.sw-status {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: center;
+  color: #7f8b9e;
+  min-height: 1.4em;          /* 佔位:狀態變動時不跳版 */
+}
+.sw-status.ready { color: #6fcf97; }
+.sw-status.warn  { color: #e0a33c; }
 
 /* ===== 解鎖鈕 ===== */
 .unlock-btn {
